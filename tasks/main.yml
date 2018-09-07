@@ -1,0 +1,76 @@
+---
+
+- tags: [ zabbix ]
+  become: yes
+  block:
+
+      # boilerplate
+    - name: bootstrap enough that ansible can run most modules
+      include_tasks: "bootstrap/main.yml"
+      tags: [ bootstrap ]
+
+      # boilerplate
+    - include_tasks: bootstrap/distro-vars-import.yml
+      tags: always
+
+      ## START OF MAIN TASKS SECTION ##
+
+    - name: configure Zabbix repo for the appropriate package manager
+      include_tasks: "repo/{{ ansible_pkg_mgr }}.yml"
+      when:
+        - ansible_pkg_mgr is defined
+        - zabbix_server_components
+      # tags: always
+
+    - include_tasks: "opt/selinux.yml"
+      when: "'selinux' in zabbix_server_opts"
+
+    - include_tasks: "opt/server-firewall.yml"
+      when: "'server-firewall' in zabbix_server_opts"
+
+    - include_tasks: "install/server-mysql.yml"
+
+    - include_tasks: "install/server-apache.yml"
+      tags: [ zabbix-web ]
+
+    - include_tasks: "install/server-users.yml"
+      tags: [ zabbix-users ]
+
+    - include_tasks: "install/server-mysql2.yml"
+
+
+    - name: install zabbix components
+      include_tasks: "opt/{{ zabbix_component_item }}.yml"
+      with_items: "{{ zabbix_server_opts | difference(['selinux','server-firewall']) }}"
+      loop_control:
+        loop_var: zabbix_component_item
+      tags: [ always ]
+
+      ## END OF MAIN TASKS SECTION ##
+
+
+    - name: "Show debugging info for node {{ inventory_hostname }}"
+      debug:
+        msg: |
+              Inventory Hostname {{ inventory_hostname }}
+              Hostname: {{ ansible_hostname }}
+              ansible version: {{ ansible_version.major }}.{{ ansible_version.minor }}.{{ ansible_version.revision }}
+              Fqdn: {{ ansible_fqdn }}
+
+              Distribution is {{ ansible_distribution }}-{{ ansible_distribution_major_version }}
+              Specific version is {{ ansible_distribution_version }}
+              OS family is {{ ansible_os_family }}
+              Release: {{ ansible_distribution_release }}
+              Ansible python version: {{ ansible_python_version }}
+
+              Network
+              #######
+
+              default ipv4: {% if ansible_default_ipv4 is defined and 'address' in ansible_default_ipv4 %}{{ ansible_default_ipv4.address }}{% else %}<undefined>{% endif %}
+
+              default ipv6: {% if ansible_default_ipv6 is defined and 'address' in ansible_default_ipv6 %}{{ ansible_default_ipv6.address }}{% else %}<undefined>{% endif %}
+
+
+              Monit
+              ##########
+              zabbix_web_admin_pass: {{ zabbix_web_admin_pass }}
