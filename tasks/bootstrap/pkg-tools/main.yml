@@ -1,0 +1,41 @@
+---
+
+  - tags: [ pkg-tools ]
+    become: yes
+    block:
+
+    - name: install tools packages
+      package:
+        name:
+          - colordiff
+
+    # - name: install tools packages
+    #   package:
+    #     name: "{{ item }}"
+    #   with_items:
+    #     - yum-utils
+    #   when: "ansible_distribution == 'CentOS'"
+
+    - template:
+        src: pkg-tools.sh
+        dest: /usr/local/bin/pkg-tools
+        owner: root
+        group: root
+        mode: 0755
+
+    # - template:
+    #     src: pkg-tools/pkg-for-file.sh
+    #     dest: /usr/local/bin/pkg-for-file
+    #     owner: root
+    #     group: root
+    #     mode: 0755
+
+    - name: create links to files
+      file:
+        src: /usr/local/bin/pkg-tools
+        dest: '/usr/local/bin/{{ item }}'
+        state: link
+      with_items:
+        - pkg-diff-file
+        - pkg-original-file
+        - pkg-provides-file
