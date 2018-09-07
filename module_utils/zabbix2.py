@@ -60,9 +60,16 @@ class ZabbixApi2:
             # # module.fail_json(msg="Failed to connect to Zabbix server: %s" % e)
 
     def get_apiinfo(self):
+        """ not working, needs to be without auth """
         apiinfos = self._zapi.apiinfo.version([])
 
         return False, apiinfos, self.warnings
+
+    #   _   _
+    #  | | | |___ ___ _ _ ___
+    #  | |_| (_-</ -_) '_(_-<
+    #   \___//__/\___|_| /__/
+    #
 
     def user_delete(self, alias):
         userids = self._zapi.apiinfo.version({'filter': {'alias': alias}})
@@ -148,8 +155,7 @@ class ZabbixApi2:
                     self.add_userid_to_groupname(user['userid'], 'Disabled')
             elif k == 'email':
                 updated = updated or self.user_update_media(
-                        user['userid'], v)
-
+                    user['userid'], v)
 
         user = self.get_user_by_id(user['userid'])
         return updated, user, self.warnings
@@ -166,43 +172,6 @@ class ZabbixApi2:
         result = self._zapi.user.get({'userids': userid})
         return result[0] if len(result) == 1 else None
 
-    def get_mediaby_name_type(self, name, type):
-        result = self._zapi.usermedia.get([])
-        return result[0] if len(result) == 1 else result
-
-    def media_update2(self):
-
-        return True, None, self.warnings
-
-
-
-
-    def user_update_media(self, userid, email):
-        user = self._zapi.user.get(
-            {'userids': userid, 'selectMedias': 'extend'})
-
-        try:
-          if len(user) == 1 and len(user[0]['medias']) == 1:
-            medias = user[0]['medias'][0]
-            if medias['sendto'] != email:
-              medias.pop('mediaid', None)
-              medias.pop('userid', None)
-              medias['sendto'] = email
-              self._zapi.user.updatemedia(dict(users=[{'userid': userid}],
-              medias=medias))
-            else:
-              self.warn("media sendto == email (%s,%s)" % (email, medias['sendto']))
-        except Exception as e:
-            self.warn("user with medias is %s : %s" % (medias, e))
-            raise
-
-
-        # self.warn("user with medias is %s" % user)
-        # self._zapi.user.update(
-        #     [{'userid': userid, 'passwd': user_args['passwd']}])
-        # can't know whether passwd was updated
-        return False
-
     def update_user_passwd(self, userid, user_args):
         self._zapi.user.update(
             [{'userid': userid, 'passwd': user_args['passwd']}])
@@ -213,6 +182,90 @@ class ZabbixApi2:
         self._zapi.user.update(
             [{'userid': userid, key: val}])
         return True
+
+    #   __  __        _ _
+    #  |  \/  |___ __| (_)__ _
+    #  | |\/| / -_) _` | / _` |
+    #  |_|  |_\___\__,_|_\__,_|
+    #
+
+    def get_mediatype_by_description(self, description):
+        result = self._zapi.mediatype.get(
+            {'filter': {'description': description}})
+        return result[0] if len(result) == 1 else result
+
+    def mediatype_update(self, mediatype, media_args):
+        updated = False
+        for k, v in media_args.items():
+            if k in ['smtp_server', 'smtp_email', 'smtp_helo']:
+                # print(mediatype)
+                # print(media_args)
+                # print(k)
+                if media_args[k] != mediatype[k]:
+                    updated = updated or self.mediatype_update_attribute(mediatype['mediatypeid'],
+                                                                         k, v)
+            elif k in ['smtp_port', 'smtp_security', 'smtp_verify_peer',
+                       'smtp_verify_host']:
+                if int(media_args[k]) != int(mediatype[k]):
+                    updated = updated or self.mediatype_update_attribute(mediatype['mediatypeid'],
+                                                                         k, v)
+            elif k in ['smtp_authentication']:
+                if int(media_args[k]) != int(mediatype[k]) or media_args['username'] != mediatype['username']:
+                    updated = True
+                self.mediatype_update_authentication(
+                    mediatype['mediatypeid'],
+                    v,
+                    media_args['username'],
+                    media_args['passwd'])
+        mediatype = self.get_mediatype_by_description(
+            mediatype['description'])
+        return updated, None, self.warnings
+
+    def mediatype_update_authentication(self, id, auth, username, password):
+        self.warn("updating key: %s  %s %s" %
+                  (auth, username, password))
+        try:
+            self._zapi.mediatype.update(
+                {'mediatypeid': id, 'smtp_authentication': auth,
+                 'username': username, 'passwd': password})
+        except Exception as e:
+            self.warn("updating failed with exception: %s" % e)
+        return False
+
+    def mediatype_update_attribute(self, id, key, val):
+        self.warn("updating key: %s with value: %s" % (key, val))
+        try:
+            self._zapi.mediatype.update(
+                {'mediatypeid': id, key: val})
+        except Exception as e:
+            self.warn("updating failed with exception: %s" % e)
+        return True
+
+    def user_update_media(self, userid, email):
+        user = self._zapi.user.get(
+            {'userids': userid, 'selectMedias': 'extend'})
+
+        try:
+            if len(user) == 1 and len(user[0]['medias']) == 1:
+                medias = user[0]['medias'][0]
+                if medias['sendto'] != email:
+                    medias.pop('mediaid', None)
+                    medias.pop('userid', None)
+                    medias['sendto'] = email
+                    self._zapi.user.updatemedia(dict(users=[{'userid': userid}],
+                                                     medias=medias))
+                else:
+                    self.warn("media sendto == email (%s,%s)" %
+                              (email, medias['sendto']))
+        except Exception as e:
+            self.warn("user with medias is %s : %s" % (medias, e))
+            raise
+
+        # self.warn("user with medias is %s" % user)
+        # self._zapi.user.update(
+        #     [{'userid': userid, 'passwd': user_args['passwd']}])
+        # can't know whether passwd was updated
+        return False
 
     def user_get_groups(self, userid):
         result = self._zapi.usergroup.get({'userids': [userid]})

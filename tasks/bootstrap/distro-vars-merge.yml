@@ -1,0 +1,19 @@
+---
+
+- tags: [ always ]
+  become: true
+  block:
+
+    - name: "gather distro vars 2"
+      include_vars: "{{ distro_specific_vars }}"
+      with_items:
+        - "default.yml"
+        - "{{ ansible_system }}.yml"
+        - "{{ ansible_os_family }}.yml"
+        - "{{ ansible_distribution }}.yml"
+        - "{{ ansible_distribution }}-{{ ansible_distribution_major_version }}.yml"
+        - "{{ ansible_distribution }}-{{ ansible_distribution_version }}.yml"
+      when: (role_path + '/vars/' + distro_specific_vars)|is_file
+      loop_control:
+        loop_var: distro_specific_vars
+      tags: [ always, vars ]

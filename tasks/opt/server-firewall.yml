@@ -1,0 +1,17 @@
+---
+
+- tags: [ zabbix, zabbix-server, zabbix-firewall, agent-firewall ]
+  become: yes
+  when: ansible_os_family == 'RedHat'
+  block:
+
+  - include_tasks: server-firewalld.yml
+    tags: always
+
+- tags: [ zabbix, zabbix-server, zabbix-firewall, firewall, agent-firewall ]
+  become: yes
+  when: ansible_os_family == 'Debian'
+  block:
+
+  - include_tasks: server-ufw.yml
+    tags: always

@@ -1,0 +1,24 @@
+---
+
+- tags: [ mysql ]
+  block:
+
+    - debug:
+        var: rprofile
+
+    - name: "gather distro vars"
+      include_vars: "{{ distro_specific_vars }}"
+      with_first_found:
+        - files:
+            - "{{ rprofile }}-{{ ansible_distribution }}-{{ ansible_distribution_version }}.yml"
+            - "{{ rprofile }}-{{ ansible_distribution }}-{{ ansible_distribution_major_version }}.yml"
+            - "{{ rprofile }}-{{ ansible_distribution }}.yml"
+            - "{{ rprofile }}-{{ ansible_os_family }}.yml"
+            - "{{ rprofile }}-{{ ansible_system }}.yml"
+            - "{{ rprofile }}-default.yml"
+          paths:
+            - "{{ role_path }}/vars"
+      # skip: true
+      loop_control:
+        loop_var: distro_specific_vars
+      tags: [ always, vars ]

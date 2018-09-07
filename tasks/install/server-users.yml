@@ -1,0 +1,122 @@
+---
+
+- tags: [ zabbix, zabbix-users ]
+  become: yes
+  block:
+
+    - name: create complex db_pass, will be overridden by extravars if provided
+      set_fact:
+        zabbix_db_pass: "{{ lookup('complex_password', '{{ zabbix_store }}/zabbix_db_pass length=15 chars=ascii_lowercase,ascii_uppercase,digits,#=+_-*^$') }}"
+      when: zabbix_db_pass is not defined
+      tags: [ always ]
+
+    - name: create complex web_admin, will be overridden by extravars if provided
+      set_fact:
+        zabbix_web_admin_pass: "{{ lookup('complex_password', '{{ zabbix_store }}/zabbix_web_admin_pass length=15 chars=ascii_lowercase,ascii_uppercase,digits') }}"
+      when: zabbix_web_admin_pass is not defined
+      tags: [ always ]
+
+      # - name: reset the default Admin password
+      #   zabbix_user:
+      #     name: "{{ zabbix_web_admin_name }}"
+      #     password: "{{ zabbix_web_admin_pass }}"
+      #     host: "{{ zabbix_db_host }}"
+      #     enabled: "{{ zabbix_web_admin_enabled }}"
+      #     zabbix_db_pass: "{{ zabbix_db_pass }}"
+
+    - name: work-around for setting zabbix user password
+      shell:
+        cmd: |
+          mysql zabbix -e "show tables;"
+          echo '{{ zabbix_db_pass }}'
+          export MYSQL_PWD='{{ zabbix_db_pass }}'
+
+          echo "UPDATE zabbix.users set passwd=md5('{{ zabbix_web_admin_pass }}') where alias='Admin';"
+          mysql zabbix << EOSQL
+
+          UPDATE zabbix.users set passwd=md5('{{ zabbix_web_admin_pass }}') where alias='Admin';
+
+          UPDATE zabbix.config set default_inventory_mode=1;
+
+          EOSQL
+
+          # echo '{{ zabbix_db_user }}'
+          # echo "export MYSQL_PWD='{{ zabbix_db_pass }}'"
+          # echo mysql -uzabbix zabbix -e \"SHOW TABLES;\"
+
+          # read -r -d '' MYSQL_PWD <<'EOF'
+          # {{ zabbix_db_pass }}
+          # EOF
+          # export MYSQL_PWD
+
+          # mysql -u'{{ zabbix_db_user }}' zabbix << EOSQL
+
+          # UPDATE zabbix.users set passwd=md5('{{ zabbix_web_admin_pass }}') where alias='Admin';
+
+          # EOSQL
+      args:
+        executable: /bin/bash
+      changed_when: False
+
+    # - name: reset the default Guest password
+    #   zabbix_user:
+    #     login_user: Admin
+    #     login_password: "{{ zabbix_web_admin_pass }}"
+    #     server_url: http://localhost/zabbix
+    #     name: "{{ zabbix_web_guest_name }}"
+    #     alias: "Guest"
+    #     enabled: no
+
+    # - name: reset the default Guest password
+    #   zabbix_user:
+    #     login_user: Admin
+    #     login_password: "{{ zabbix_web_admin_pass }}"
+    #     server_url: http://localhost/zabbix
+    #     name: "{{ zabbix_web_guest_name }}"
+    #     alias: "Guest1"
+    #     enabled: yes
+
+    # - name: reset the default Guest password
+    #   zabbix_user:
+    #     login_user: Admin
+    #     login_password: "{{ zabbix_web_admin_pass }}"
+    #     server_url: http://localhost/zabbix
+    #     name: "{{ zabbix_web_guest_name }}1gergrg"
+    #     alias: "new_user1"
+    #     enabled: yes
+    #     passwd: 123
+    #     email: "xfexxx@bccadgers.com"
+
+    # - name: reset the default Guest password
+    #   zabbix_user:
+    #     login_user: Admin
+    #     login_password: "{{ zabbix_web_admin_pass }}"
+    #     server_url: http://localhost/zabbix
+    #     name: "{{ zabbix_web_guest_name }}1gergrg"
+    #     alias: "new_ffeuser1"
+    #     enabled: yes
+    #     passwd: 123
+    #     email: "xfexxx@bccadgers.com"
+
+    - name: cache server auth credentials
+      zabbix_auth:
+        login_user: Admin
+        login_password: "{{ zabbix_web_admin_pass }}"
+        server_url: http://localhost/zabbix
+
+    - debug:
+        var: zabbix_server_url
+
+    - name: setup SMTP server for the default Email mediatype
+      zabbix_mediatype:
+        name: Email
+        smtp_server: smtp.google.com
+        smtp_port: 27
+        from_address: "zabbix@myemailprovider.com"
+        smtp_auth:
+          username: my_smtp_login1
+          password: my_smtp_password2
+
+
+        # update zabbix.config set authentication_type=0 where authentication_type=1;
+        # update users set passwd=md5('') where alias='Admin';

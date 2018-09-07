@@ -1,0 +1,21 @@
+---
+
+- tags: main-run
+  become: true
+  block:
+
+  - name: install epel
+    package:
+      name:
+        - epel-release
+
+  - name: install shim packages (CentOS-6)
+    package:
+      name:
+        - libselinux-python
+        - selinux-policy
+        - python-pip
+        - unzip
+        - git
+        - net-tools
+        - curl

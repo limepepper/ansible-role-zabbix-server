@@ -1,0 +1,49 @@
+---
+
+- tags: [ always ]
+  become: true
+  block:
+
+  # - name: "gather distro vars"
+  #   debug:
+  #     msg: "{{ role_path + '/vars/' + distro_specific_vars }}"
+  #   with_items:
+  #     - "{{ ansible_distribution }}-{{ ansible_distribution_version }}.yml"
+  #     - "{{ ansible_distribution }}-{{ ansible_distribution_major_version }}.yml"
+  #     - "{{ ansible_distribution }}.yml"
+  #     - "{{ ansible_os_family }}.yml"
+  #     - "{{ ansible_system }}.yml"
+  #     - "default.yml"
+  #   loop_control:
+  #     loop_var: distro_specific_vars
+  #   #when: (role_path + 'vars/' + distro_specific_vars)|is_file
+
+  - name: "gather distro vars 2"
+    include_vars: "{{ distro_specific_vars }}"
+    with_items:
+      - "default.yml"
+      - "{{ ansible_system }}.yml"
+      - "{{ ansible_os_family }}.yml"
+      - "{{ ansible_distribution }}.yml"
+      - "{{ ansible_distribution }}-{{ ansible_distribution_major_version }}.yml"
+      - "{{ ansible_distribution }}-{{ ansible_distribution_version }}.yml"
+    when: (role_path + '/vars/' + distro_specific_vars) is file
+    loop_control:
+      loop_var: distro_specific_vars
+    tags: [ always, vars ]
+
+  - name: display the value of the role_path basename
+    debug:
+      msg: "role name {{ ( role_path| basename ) }} is {{ ( role_path| basename ) in hostvars[inventory_hostname]}}"
+
+  - name: merge the logfiles from this role
+    set_fact:
+      logfiles: |
+        {{ logfiles|default({})|combine( hostvars[inventory_hostname][role_path| basename]['logfiles']|default({}) ) }}
+    when: "( role_path| basename ) in hostvars[inventory_hostname]"
+
+  - name: merge the logfiles from this role
+    set_fact:
+      logfiles: |
+        {{ logfiles|default({})|combine( hostvars[inventory_hostname][role_path| basename|replace('limepepper_','limepepper.')]['logfiles']|default({}) ) }}
+    when: "(role_path| basename) in hostvars[inventory_hostname]"

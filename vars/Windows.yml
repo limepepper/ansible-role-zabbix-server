@@ -1,0 +1,9 @@
+---
+
+
+
+zabbix_server_path: C:\zabbix\server
+zabbix_agent_path: C:\zabbix\agent
+zabbix_agent_conf: C:\zabbix\agent\
+
+

@@ -1,0 +1,39 @@
+---
+
+- tags: main-run
+  become: true
+  block:
+
+    - name: install epel
+      yum:
+        name:
+          - epel-release
+
+    - name: install shim packages (CentOS-7)
+      yum:
+        name:
+          - libselinux-python
+          - selinux-policy
+          - policycoreutils-python
+          - python-pip
+          - unzip
+          - git
+          # unlikely to be generally applicable, do in mysql instead
+          # - MySQL-python
+          - net-tools
+          - curl
+
+    - name: create the /var/log/journal for storing boot logs
+      file:
+        path: /var/log/journal
+        state: directory
+        # owner: root
+        # group: systemd-journal
+      register: journal_created
+
+    - name: fix permissions and restart journaling
+      shell:
+        cmd: |
+          systemd-tmpfiles --create --prefix /var/log/journal
+          systemctl restart systemd-journald
+      when: journal_created.changed

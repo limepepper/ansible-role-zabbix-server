@@ -1,0 +1,38 @@
+---
+
+- name: debian annoyances block
+  become: yes
+  tags: [ annoyances ]
+  block:
+
+    # Debian seems to need an apt-get update kick
+    - name: Update packages list (Debian)
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+
+    # fix for https://github.com/pypa/pip/issues/4817
+    - name: Force upgrade of pip on Debian
+      pip:
+        name: pip
+        version: '9.0.1'
+        extra_args: -i https://pypi.python.org/simple/
+
+    - name: install Tools for Debian
+      package:
+        name:
+          - mlocate
+          - telnet
+          - apt-file
+          - net-tools
+          - whois
+          - inotify-tools
+          - jq
+
+    # update the mlocate database in the background
+    - name: update the mlocate database
+      command: updatedb
+      async: 1000
+      poll: 0
+      changed_when: False

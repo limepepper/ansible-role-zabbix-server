@@ -1,0 +1,22 @@
+---
+
+- tags: [ bootstrap ]
+  become: true
+  block:
+
+  - debug:
+      msg: "using the Ubuntu boot strapper (Ubuntu-generic)"
+
+  - name: "install shim packages for {{ ansible_distribution }}"
+    apt:
+      update_cache: yes
+      cache_valid_time: 3600
+      install_recommends: no
+      name:
+        - python-pip
+        - python-mysqldb
+        - unzip
+        - git
+        - curl
+        - python-setuptools
+        - net-tools

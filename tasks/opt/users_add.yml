@@ -1,0 +1,35 @@
+---
+
+- tags: [ zabbix, zabbix-users-add ]
+  become: yes
+  block:
+
+  - name: get the zabbix password from the stored vars. this can be overridden
+    set_fact:
+      zabbix_web_admin_pass: "{{ lookup('complex_password', '{{ zabbix_store }}/zabbix_web_admin_pass length=15 chars=ascii_lowercase,ascii_uppercase,digits') }}"
+    when: zabbix_web_admin_pass is not defined
+
+  - debug:
+      var: zabbix_admins
+
+  - name: cache the zabbix server login account
+    zabbix_server_auth:
+      login_user: Admin
+      login_password: "{{ zabbix_web_admin_pass }}"
+      server_url: http://localhost/zabbix
+
+  - debug:
+      msg: "pass was {{ zabbix_server_auth.login_password }}"
+
+  - debug:
+      msg: "pass was {{ z11 }}"
+
+  - name: Import Zabbix Template for Web Checks
+    zabbix_template2:
+      template_name: Web Checks
+      template_groups:
+        - Templates
+        - Web Checks
+      state: present
+    register: web_checks_template
+

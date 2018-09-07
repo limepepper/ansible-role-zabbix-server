@@ -1,0 +1,41 @@
+---
+
+- tags: [ zabbix, mysql, zabbix-mysql, zabbix-mysql2 ]
+  become: yes
+  block:
+
+  # - name: zabbix-server (mysql)
+  #   service:
+  #     name: "zabbix-server"
+  #     state: started
+  #     enabled: yes
+  #   tags: [ service ]
+  - name: install zabbix_api
+    pip:
+      name: zabbix-api
+
+  - name: create auto-register action
+    zabbix_action:
+      name: "Add-Host-1"
+      eventsource: 2
+      server_url: http://localhost/zabbix
+      login_user: 'Admin'
+      login_password: '{{ zabbix_web_admin_pass }}'
+      status: yes
+      def_shortdata: 'Auto registration: {HOST.HOST}'
+      def_longdata: |
+          Host name: {HOST.HOST}
+          Host IP: {HOST.IP}
+          Agent port: {HOST.PORT}
+    tags: [ zabbix_action ]
+
+  - name: Create host groups
+    zabbix_group:
+      server_url: http://localhost/zabbix
+      login_user: 'Admin'
+      login_password: '{{ zabbix_web_admin_pass }}'
+      state: present
+      host_groups:
+        - Windows servers
+        - Linux servers
+        - Raspberry Pi

@@ -1,0 +1,84 @@
+---
+
+
+- tags: [ zabbix, zabbix-web ]
+  become: yes
+  block:
+
+    # zabbix 3.4 needs php version at least php 5.4 ???
+  - set_fact:
+      apache_suite: rh-php56
+    when:
+      - "ansible_distribution == 'CentOS'"
+      - "ansible_distribution_major_version == '6'"
+    tags: always
+
+  - name: bootstrap apache
+    # zabbix-web depends on php
+    include_role:
+      name: limepepper.apache
+    tags: always
+
+  - name: create complex db_pass, will be overridden by extravars if provided
+    set_fact:
+      zabbix_db_pass: "{{ lookup('complex_password', '{{ zabbix_store }}/zabbix_db_pass length=15 chars=ascii_lowercase,ascii_uppercase,digits,#=+_-*^$') }}"
+    when: zabbix_db_pass is not defined
+    tags: [ always ]
+
+  - name: create complex web_admin, will be overridden by extravars if provided
+    set_fact:
+      zabbix_web_admin_pass: "{{ lookup('complex_password', '{{ zabbix_store }}/zabbix_web_admin_pass length=15 chars=ascii_lowercase,ascii_uppercase,digits') }}"
+    when: zabbix_web_admin_pass is not defined
+    tags: [ always ]
+
+  - name: install Zabbix-web-mysql packages
+    package:
+      name:
+        - zabbix-web-mysql
+    tags: [ pkgs ]
+
+  - debug:
+      var: zabbix_db_pass
+
+  - debug:
+      var: apache_version
+
+  - debug:
+      msg: "{{ apache_version | type_debug }}"
+
+  - name: modify config to add timezone UTC
+    template:
+      src: httpd/zabbix-apache-2.2.conf
+      dest: "{{ apache_site_conf_path }}/zabbix.conf"
+      owner: root
+      group: root
+      mode: 0644
+    tags: [ apache ]
+    notify: reload apache
+    when: "apache_version|float == 2.2"
+
+  - name: modify config to add timezone UTC (apache 2.4)
+    template:
+      src: httpd/zabbix-apache-2.4.conf
+      dest: "{{ apache_conf_d_dir }}/zabbix.conf"
+      owner: root
+      group: root
+      mode: 0644
+    tags: [ apache ]
+    notify: reload apache
+    when: "apache_version|float == 2.4"
+
+    # - name: create the zabbix config dir
+    #   file:
+    #     path: /etc/zabbix
+    #     state: directory
+
+  - name: configure the web-zabbix to use mysql
+    template:
+      src: web-mysql/zabbix.conf.php
+      dest: /etc/zabbix/web/zabbix.conf.php
+      owner: root
+      group: root
+      mode: 0644
+    tags: [ apache ]
+    notify: reload apache

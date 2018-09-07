@@ -1,0 +1,72 @@
+---
+
+- tags: [ bootstrap ]
+  become: true
+  block:
+
+    - debug:
+        msg: "using the Debian-9 boot strapper"
+
+    - name: install shim packages for Debian 9
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+        install_recommends: no
+        name:
+          - python-pip
+          - unzip
+          - git
+          - curl
+          - net-tools
+          - apt-transport-https
+          - vim-tiny
+
+    ##    ___      _    _                           _  __ _ _
+    ##   |   \ ___| |__(_)__ _ _ _    __ _ _ __  __| |/ /| | |
+    ##   | |) / -_) '_ \ / _` | ' \  / _` | '  \/ _` / _ \_  _|
+    ##   |___/\___|_.__/_\__,_|_||_| \__,_|_|_|_\__,_\___/ |_|
+    ##
+
+    - tags: [ zabbix-debian ]
+      become: yes
+      when:
+        - "ansible_os_family == 'Debian'"
+        - "ansible_machine == 'x86_64'"
+      block:
+
+        - debug:
+            msg: |
+              is probably debian-9
+              {{ ansible_lsb|default('ansible_lsb not defined') }}
+              {{ ansible_lsb.id|default('ansible_lsb not defined') }}
+              {{ ansible_machine }}
+
+        # debian-9 compatible seems to have mouse=a set
+        # annoyance scale (4/11)
+        - name: use vim.tiny for vi
+          alternatives:
+            name: vi
+            path: /usr/bin/vim.tiny
+
+
+    ##    ___              _                      ___ _
+    ##   | _ \__ _ ____ __| |__  ___ _ _ _ _ _  _| _ (_)
+    ##   |   / _` (_-< '_ \ '_ \/ -_) '_| '_| || |  _/ |
+    ##   |_|_\__,_/__/ .__/_.__/\___|_| |_|  \_, |_| |_|
+    ##               |_|                     |__/
+    # raspbian reports as distro=debian os_family=debian
+
+    - tags: [ zabbix-raspberrypi ]
+      become: yes
+      when:
+        - ansible_lsb is defined
+        - "'id' in ansible_lsb and ansible_lsb.id == 'Raspbian'"
+        - "ansible_machine == 'armv7l' or ansible_machine == 'armv6l'"
+      block:
+
+        - debug:
+            msg: |
+              is probably raspberrypi
+              {{ ansible_lsb }}
+              {{ ansible_lsb.id }}
+              {{ ansible_machine }}

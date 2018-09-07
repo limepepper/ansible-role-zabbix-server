@@ -1,0 +1,52 @@
+---
+
+- hosts: all
+  become: yes
+  gather_facts: false
+  pre_tasks:
+    - name: bootstrap-block
+      # description: bootstrap hosts with base builds not including python 2.7
+      become: True
+      tags: [ bootstrap, pre_tasks, install-python ]
+      block:
+        - name: Install python2 for Ansible
+          raw: bash -c "test -e /usr/bin/python || ( ( test -e /usr/bin/apt && apt -qqy update && apt install -qqy python-minimal) || ( test -e /usr/bin/dnf && /usr/bin/dnf -qy install python) || ( test -e /usr/bin/yum && /usr/bin/yum -qy install python) )"
+          register: output
+          changed_when: 'output.stdout|trim() != ""'
+        - name: Gathering Facts
+          setup:
+          tags: always
+        # end of python shim
+
+  tasks:
+
+    - block:
+        - name: import the role under test
+          import_role:
+            name: '{{playbook_dir}}/..'
+          vars:
+            zabbix_server_opts:
+              - selinux
+
+        - include_tasks: zabbix_user_tests_setup.yml
+
+
+      # always:
+      #   - name: create the var cache directory
+      #     file:
+      #       name: "/var/cache/ansible/attributes"
+      #       state: directory
+      #     tags: always
+      #
+      #   - name: write out the hostvars to json for inspec testing
+      #     copy:
+      #       content: "{{ hostvars[inventory_hostname] | strip_fieldattributes | to_nice_json }}"
+      #       dest: "/var/cache/ansible/attributes/hostvars.json"
+      #     changed_when: false
+      #     tags: always
+      #
+      # rescue:
+      #
+      #   - name: include the debugger script
+      #     include_tasks: ../tasks/bootstrap/distro-debug-packages.yml
+      #     tags: always

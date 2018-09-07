@@ -1,0 +1,31 @@
+---
+
+- become: true
+  block:
+
+  - yum:
+      name:
+        - wget
+        - libselinux-python
+        - telnet
+        - wget
+        - strace
+        - gdb
+        - tcpdump
+        - lynx
+        - wget
+        - curl
+        - bind-utils
+        - iotop
+        - dstat
+        - procps
+        - lsof
+        - nmap
+        - inotify-tools
+
+  # update the mlocate database in the background
+  - name: update the mlocate database
+    command: updatedb
+    async: 1000
+    poll: 0
+    changed_when: False

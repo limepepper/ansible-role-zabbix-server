@@ -1,0 +1,18 @@
+---
+
+- tags: [ bootstrap ]
+  become: true
+  block:
+
+  - debug:
+      msg: "using the base debian boot strapper"
+
+  - name: install shim packages
+    package:
+      name:
+        - python-pip
+        - unzip
+        - git
+        - curl
+        - net-tools
+        - apt-utils

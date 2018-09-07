@@ -1,0 +1,18 @@
+---
+# vars file for limepepper.zabbix
+
+aa_this_is_defined_in_vars: hello moto
+
+limepepper.zabbix:
+  logfiles:
+    limepepper.zabbix:
+      log_files_info:
+        - /var/log/zabbix/zabbix_agentd.log
+        - /var/log/zabbix/zabbix_server.log
+      log_files:
+        - path: /var/log/zabbix/zabbix_agentd.log
+          prog: zabbix_agent
+          type: general
+        - path: /var/log/zabbix/zabbix_server.log
+          prog: zabbix_server
+          type: general

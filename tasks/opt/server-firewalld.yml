@@ -1,0 +1,91 @@
+---
+
+- tags: [ zabbix, zabbix-server, zabbix-firewalld, zabbix-server-firewalld ]
+  when: ansible_os_family == 'RedHat'
+  become: yes
+  block:
+
+  - firewalld:
+      service: http
+      permanent: true
+      state: disabled
+    notify:
+      - reload firewalld
+
+  - firewalld:
+      service: http
+      zone: trusted
+      permanent: true
+      state: enabled
+    notify:
+      - reload firewalld
+
+  - name: add trusted nets to http sources
+    firewalld:
+      source: "{{ source_item_net }}"
+      zone: trusted
+      permanent: true
+      state: enabled
+    with_items: "{{ zabbix_trusted_http }}"
+    loop_control:
+      loop_var: source_item_net
+    notify:
+      - reload firewalld
+
+  - template:
+      src: firewalld/service.xml
+      dest: /etc/firewalld/services/zabbix-server.xml
+    vars:
+      service_name: zabbix-server
+      service_shortname: Zabbix Server
+      service_description: zabbix-server service
+      service_ports:
+        - protocol: tcp
+          spec: 10051
+    register: zabbix_server_firewalld_service
+
+  - service:
+      name: firewalld
+      state: reloaded
+    when: zabbix_server_firewalld_service.changed
+
+  - firewalld:
+      zone: public
+      service: zabbix-server
+      permanent: true
+      state: disabled
+    notify:
+      - reload firewalld
+
+  - name: create a zabbix-agents zone in the firewalld
+    firewalld:
+      zone: zabbix-agents
+      permanent: true
+      state: present
+    register: zabbix_agent_zone_added
+
+  - service:
+      name: firewalld
+      state: reloaded
+    when: zabbix_agent_zone_added.changed
+
+  - name: give zabbix-agents access to the zabbix-server
+    firewalld:
+      zone: zabbix-agents
+      service: zabbix-server
+      permanent: true
+      state: enabled
+    notify:
+      - reload firewalld
+
+  - name: add trusted agent sources
+    firewalld:
+      source: "{{ agent_source_item_net }}"
+      zone: zabbix-agents
+      permanent: true
+      state: enabled
+    with_items: "{{ zabbix_trusted_agents }}"
+    loop_control:
+      loop_var: agent_source_item_net
+    notify:
+      - reload firewalld
