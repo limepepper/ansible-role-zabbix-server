@@ -10,10 +10,14 @@
       tags: [ bootstrap ]
 
       # boilerplate
-    - include_tasks: bootstrap/distro-vars-import.yml
+    - include_tasks: bootstrap/distro-vars-import2.yml
       tags: always
 
       ## START OF MAIN TASKS SECTION ##
+
+    - name: install the zabbix-api python lib
+      pip:
+        name: zabbix-api
 
     - name: configure Zabbix repo for the appropriate package manager
       include_tasks: "repo/{{ ansible_pkg_mgr }}.yml"
@@ -22,25 +26,37 @@
         - zabbix_server_components
       # tags: always
 
-    - include_tasks: "opt/selinux.yml"
-      when: "'selinux' in zabbix_server_opts"
+    - include_tasks: "bootstrap/selinux/main.yml"
+      vars:
+        semodule_name: zabbix-server
+      when:
+        - ansible_os_family == 'RedHat'
+        # no point in doing this if no server components are being installed
+        - zabbix_server_components
+        # - "'selinux' in zabbix_server_opts"
+      tags: [selinux, zabbix-selinux]
 
     - include_tasks: "opt/server-firewall.yml"
       when: "'server-firewall' in zabbix_server_opts"
 
     - include_tasks: "install/server-mysql.yml"
+      when: "'zabbix-server-mysql' in zabbix_server_components"
+      tags: always
 
     - include_tasks: "install/server-apache.yml"
+      when: "'zabbix-web' in zabbix_server_components"
       tags: [ zabbix-web ]
 
-    - include_tasks: "install/server-users.yml"
+    - name: set the web admin password, and disabled the guest user
+      include_tasks: "install/server-users.yml"
       tags: [ zabbix-users ]
 
     - include_tasks: "install/server-mysql2.yml"
-
+      when: "'zabbix-server-mysql' in zabbix_server_components"
 
     - name: install zabbix components
       include_tasks: "opt/{{ zabbix_component_item }}.yml"
+      # don't do the tasks already done
       with_items: "{{ zabbix_server_opts | difference(['selinux','server-firewall']) }}"
       loop_control:
         loop_var: zabbix_component_item

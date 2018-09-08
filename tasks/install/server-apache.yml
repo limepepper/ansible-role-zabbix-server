@@ -5,19 +5,19 @@
   become: yes
   block:
 
-    # zabbix 3.4 needs php version at least php 5.4 ???
-  - set_fact:
-      apache_suite: rh-php56
-    when:
-      - "ansible_distribution == 'CentOS'"
-      - "ansible_distribution_major_version == '6'"
-    tags: always
+  #   # zabbix 3.4 needs php version at least php 5.4 ???
+  # - set_fact:
+  #     apache_suite: rh-php56
+  #   when:
+  #     - "ansible_distribution == 'CentOS'"
+  #     - "ansible_distribution_major_version == '6'"
+  #   tags: always
 
-  - name: bootstrap apache
-    # zabbix-web depends on php
-    include_role:
-      name: limepepper.apache
-    tags: always
+  # - name: bootstrap apache
+  #   # zabbix-web depends on php
+  #   include_role:
+  #     name: limepepper.apache
+  #   tags: always
 
   - name: create complex db_pass, will be overridden by extravars if provided
     set_fact:
@@ -33,9 +33,20 @@
 
   - name: install Zabbix-web-mysql packages
     package:
-      name:
-        - zabbix-web-mysql
+      name: "{{ zabbix_packages_web }}"
     tags: [ pkgs ]
+
+  - tags: [ zabbix, mysql, zabbix-mysql ]
+    when:
+      - "ansible_distribution +'-'+ ansible_distribution_major_version == 'Ubuntu-16'"
+    block:
+      - name: Install a .deb package from the internet.
+        apt:
+          deb: "{{ item }}"
+        with_items: "{{ zabbix_packages_server_web_debs }}"
+
+
+
 
   - debug:
       var: zabbix_db_pass
@@ -49,24 +60,26 @@
   - name: modify config to add timezone UTC
     template:
       src: httpd/zabbix-apache-2.2.conf
-      dest: "{{ apache_site_conf_path }}/zabbix.conf"
+      dest: "{{ apache_conf_enabled }}/zabbix.conf"
       owner: root
       group: root
       mode: 0644
     tags: [ apache ]
     notify: reload apache
     when: "apache_version|float == 2.2"
+    register: zabbix_web_configured
 
   - name: modify config to add timezone UTC (apache 2.4)
     template:
       src: httpd/zabbix-apache-2.4.conf
-      dest: "{{ apache_conf_d_dir }}/zabbix.conf"
+      dest: "{{ apache_conf_enabled }}/zabbix.conf"
       owner: root
       group: root
       mode: 0644
     tags: [ apache ]
     notify: reload apache
     when: "apache_version|float == 2.4"
+    register: zabbix_web_configured
 
     # - name: create the zabbix config dir
     #   file:
@@ -76,9 +89,17 @@
   - name: configure the web-zabbix to use mysql
     template:
       src: web-mysql/zabbix.conf.php
-      dest: /etc/zabbix/web/zabbix.conf.php
+      dest: "{{ zabbix_web_conf }}"
       owner: root
       group: root
       mode: 0644
     tags: [ apache ]
+    register: zabbix_web_php_configured
     notify: reload apache
+
+  - name: start {{ apache_service }} service after installing and loading mods
+    service:
+      name: "{{ apache_service }}"
+      state: reloaded
+      enabled: yes
+    when: zabbix_web_configured.changed

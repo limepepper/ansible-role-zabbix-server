@@ -33,6 +33,15 @@
             {{ ansible_lsb.id }}
             {{ ansible_machine }}
 
+      # - name: example copying file with owner and permissions
+      #   copy:
+      #     src: templates/repo/zabbix-official-repo.gpg
+      #     dest: /etc/foo.conf
+
+      - name: Install a .deb package from the internet.
+        apt:
+          deb: https://repo.zabbix.com/zabbix/3.4/ubuntu/pool/main/z/zabbix-release/zabbix-release_3.4-1+xenial_all.deb
+
 # wget http://repo.zabbix.com/zabbix/3.4/debian/pool/main/z/zabbix-release/zabbix-release_3.4-1+stretch_all.deb
 # # dpkg -i zabbix-release_3.4-1+stretch_all.deb
 # # apt update

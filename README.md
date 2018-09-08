@@ -7,9 +7,9 @@ managing users, groups and hosts in Zabbix
 Example Playbook
 ----------------
 
-If you just want to manage users on an existing zabbix installation, you
-can do a basic role import, and then use the `zabbix_user` module in your own
-roles/playbooks like so;
+If you just want to manage users (or problem notifications) on an existing
+zabbix installation, you can do a basic role import, and then use the
+`zabbix_user` module in your own roles/playbooks like so;
 
 ```yml
 
@@ -77,7 +77,8 @@ or you can use the classic role import syntax, which is slightly less verbose;
 ```
 
 To successfully send email notifications, zabbix needs to know how to send email
-via SMTP.
+via SMTP. You can configure those with the `zabbix_mediatype` and `zabbix_user`
+modules like so;
 
 ```yml
 
@@ -87,14 +88,24 @@ via SMTP.
     - limepepper.apache
     - limepepper.zabbix-server
   vars:
-    # use a more recent version of mysql
-    mysql_profile: mysql_community_server_5_7
+    # set the main super admin password, also used for api access
+    zabbix_web_admin_pass: some_complex_password
     # install mysql backend, and web components
     zabbix_server_components:
       - zabbix-server-mysql
       - zabbix-web
 
   tasks:
+    - name: create a zabbix user with an email for notifications
+      zabbix_user:
+        # zabbix api login details
+        login_user: Admin
+        login_password: "{{ zabbix_web_admin_pass }}"
+        server_url: http://localhost/zabbix
+        # module args
+        alias: "my_zabbix_user"
+        passwd: my_zabbix_password
+        email: xfexxx@example.com
 
     - name: setup SMTP for the default Email media type
       zabbix_media:
@@ -104,24 +115,12 @@ via SMTP.
         server_url: http://localhost/zabbix
         # module args
         name: Email
-        type: Email
         smtp_server: smtp.google.com
         smtp_server_port: 25
-        from_address: "zabbix@{{ ansible_fqdn }}"
+        from_address: zabbix@somedomain.com
         auth:
           username: my_smtp_login
           password: my_smtp_password
-
-    - name: create a zabbix use and setup email notifications
-      zabbix_user:
-        # zabbix api login details
-        login_user: Admin
-        login_password: "{{ zabbix_web_admin_pass }}"
-        server_url: http://localhost/zabbix
-        # module args
-        alias: "my_notification_user"
-        passwd: xxxxxxx
-        email: xfexxx@example.com
 
 ```
 

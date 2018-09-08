@@ -50,7 +50,17 @@ colordiff -y ${myfile} ${cache}/${mypackage}/${myfile}
 
 {% elif ansible_pkg_mgr == 'dnf' %}
 
+echo ${mypackage}
 
+mkdir -p ${cache}/${mypackage}
+cd ${cache}/${mypackage}
+
+dnf download ${mypackage}
+
+rpm2cpio ${mypackage}.rpm | cpio -idmv
+
+echo colordiff -y ${myfile} ${cache}/${mypackage}/${myfile}
+colordiff -y ${myfile} ${cache}/${mypackage}/${myfile}
 
 {% elif ansible_pkg_mgr == 'apt' %}
 
@@ -129,7 +139,17 @@ cat ${cache}/${mypackage}/${myfile}
 
 {% elif ansible_pkg_mgr == 'dnf' %}
 
+echo ${mypackage}
 
+mkdir -p ${cache}/${mypackage}
+cd ${cache}/${mypackage}
+
+dnf download ${mypackage}
+
+rpm2cpio ${mypackage}.rpm | cpio -idmv
+
+cat ${cache}/${mypackage}/${myfile}
+# colordiff -y ${myfile} ${cache}/${mypackage}/${myfile}
 
 {% elif ansible_pkg_mgr == 'apt' %}
 

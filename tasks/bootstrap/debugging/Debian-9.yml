@@ -47,3 +47,10 @@
       async: 1000
       poll: 0
       changed_when: False
+
+    # update the apt-file database in the background
+    - name: update the apt-file database
+      command: apt-file update
+      async: 1000
+      poll: 0
+      changed_when: False

@@ -1,0 +1,15 @@
+---
+
+
+- name: install the builder tools
+  package:
+    name:
+     - python-devel
+     - openssl-devel
+     - libffi-devel
+     - gcc
+
+- name: pip pyOpenSSL package
+  pip:
+    name: pyOpenSSL
+    version: 17.5.0

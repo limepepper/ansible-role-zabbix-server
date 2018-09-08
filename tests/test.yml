@@ -21,32 +21,55 @@
   tasks:
 
     - block:
+
+        - debug:
+            msg: |
+              apache profile : {{ apache_profile }}
+              ara_enabled : {{ ara_enabled }}
+
+        - import_role:
+            name: limepepper.mysql
+
+        - import_role:
+            name: limepepper.apache
+          vars:
+            apache_opts:
+              - php/mod_php
+              # - ssl/mod_ssl
+              - rewrite
+
         - name: import the role under test
           import_role:
             name: '{{playbook_dir}}/..'
           vars:
-            zabbix_server_opts:
+            zabbix_server_components:
+              # order matters here. selinux and firewall before zabbix
               - selinux
+              - server-firewall
+              - zabbix-server-mysql
+              # install web components after server
+              - zabbix-web
 
         - include_tasks: zabbix_user_tests_setup.yml
 
+      always:
+        - name: create the var cache directory
+          file:
+            name: "/var/cache/ansible/attributes"
+            state: directory
+          tags: always
 
-      # always:
-      #   - name: create the var cache directory
-      #     file:
-      #       name: "/var/cache/ansible/attributes"
-      #       state: directory
-      #     tags: always
-      #
-      #   - name: write out the hostvars to json for inspec testing
-      #     copy:
-      #       content: "{{ hostvars[inventory_hostname] | strip_fieldattributes | to_nice_json }}"
-      #       dest: "/var/cache/ansible/attributes/hostvars.json"
-      #     changed_when: false
-      #     tags: always
-      #
-      # rescue:
-      #
-      #   - name: include the debugger script
-      #     include_tasks: ../tasks/bootstrap/distro-debug-packages.yml
-      #     tags: always
+        - name: write out the hostvars to json for inspec testing
+          copy:
+            content: "{{ hostvars[inventory_hostname] | strip_fieldattributes | to_nice_json }}"
+            dest: "/var/cache/ansible/attributes/hostvars.json"
+          changed_when: false
+          tags: always
+
+      rescue:
+        - name: include the debugger script
+          include_tasks: ../tasks/bootstrap/distro-debug-packages.yml
+          tags: always
+
+        - fail:
+            msg: force a fail, to inform test kitche etc

@@ -79,7 +79,10 @@ def main():
 
 
     module.warn("media_args is %s" % media_args)
-    media_args = {k: v for k, v in media_args.items() if v is not None}
+    #media_args = [k for k in media_args if media_args[k] is not None]
+    media_args = dict((k, media_args[k])
+                      for k in media_args if media_args[k] is not None)
+    # {k: v for k, v in media_args.items() if v is not None}
     module.warn("media_args is %s" % media_args)
 
     zbx = None

@@ -19,3 +19,8 @@
         - git
         - net-tools
         - curl
+
+  - name: Force upgrade of pip on CentOS-6
+    pip:
+      name: pip
+      version: '9.0.1'

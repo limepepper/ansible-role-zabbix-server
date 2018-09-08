@@ -1,0 +1,72 @@
+---
+
+- tags: [ selinux ]
+  become: yes
+  when:
+    - "ansible_os_family == 'RedHat'"
+    - ansible_selinux is defined
+    - ansible_selinux.status is defined
+    - "ansible_selinux.status != 'disabled'"
+  block:
+
+  - name: install packages required for policy editing
+    package:
+      name:
+        - checkpolicy
+        # - policycoreutils-python-utils
+        - policycoreutils
+        # policycoreutils-python package contains semanage
+        - policycoreutils-python
+        - selinux-policy-devel
+
+  - name: create the selinux cache directory
+    file:
+      name: /var/cache/ansible/selinux
+      state: directory
+    tags: always
+
+  - name: create the policy template
+    template:
+      src: selinux/policy-{{ semodule_name }}.j2
+      dest: /var/cache/ansible/selinux/my-{{ semodule_name }}.te
+      owner: root
+      group: root
+      mode: 0644
+    register: policy_template
+
+  # for centos 7...
+  - name: create the module
+    shell:
+      cmd: |
+        cd /var/cache/ansible/selinux
+        make -f /usr/share/selinux/devel/Makefile my-{{ semodule_name }}.pp
+    when:
+      - policy_template.changed
+      - ansible_distribution_major_version == '7'
+
+  # for centos 6...
+  - name: generate the type enforcement rules file
+    command: |
+      /usr/bin/checkmodule  -m -o /var/cache/ansible/selinux/my-{{ semodule_name }}.mod /var/cache/ansible/selinux/my-{{ semodule_name }}.te
+    when:
+      - policy_template.changed
+      - ansible_distribution_major_version == '6'
+
+  # for centos 6...
+  - name: convert the binary module to a policy file
+    command: |
+      /usr/bin/semodule_package -m /var/cache/ansible/selinux/my-{{ semodule_name }}.mod -o /var/cache/ansible/selinux/my-{{ semodule_name }}.pp
+    when:
+      - policy_template.changed
+      - ansible_distribution_major_version == '6'
+
+  # - name: return motd to registered var2
+  #   command: |
+  #     /usr/bin/semodule_package -m /tmp/my-zabbix.mod -o /tmp/my-zabbix.pp
+
+  - name: install the module
+    command: |
+      semodule -i /var/cache/ansible/selinux/my-{{ semodule_name }}.pp
+    when:
+      - policy_template.changed
+

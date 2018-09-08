@@ -16,3 +16,29 @@ limepepper.zabbix:
         - path: /var/log/zabbix/zabbix_server.log
           prog: zabbix_server
           type: general
+
+zabbix_db_name: zabbix
+zabbix_db_user: zabbix
+zabbix_db_host: localhost
+
+zabbix_server_hostname: zabbix
+
+zabbix_web_admin_name: Admin
+zabbix_web_admin_enabled: true
+
+zabbix_web_guest_name: guest
+
+zabbix_packages_server_mysql:
+  - zabbix-server-mysql
+  - zabbix-get
+  - zabbix-sender
+
+zabbix_packages_server_pgsql:
+  - zabbix-server-pgsql
+  - zabbix-get
+  - zabbix-sender
+
+zabbix_packages_web:
+  - zabbix-web-mysql
+
+zabbix_web_conf: /etc/zabbix/web/zabbix.conf.php

@@ -1,0 +1,6 @@
+---
+
+- name: pip pyOpenSSL package
+  pip:
+    name: pyOpenSSL
+    version: 18.0.0

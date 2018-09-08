@@ -76,7 +76,9 @@ def main():
     )
     module.warn("user_args is %s" % user_args)
 
-    user_args = {k: v for k, v in user_args.items() if v is not None}
+    # user_args = {k: v for k, v in user_args.items() if v is not None}
+    user_args = dict((k, user_args[k])
+                     for k in user_args if user_args[k] is not None)
     module.warn("user_args is %s" % user_args)
 
 

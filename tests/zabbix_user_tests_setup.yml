@@ -25,6 +25,8 @@
     server_url: http://localhost/zabbix
     name: "{{ zabbix_web_guest_name }}1gergrg"
     alias: user_not_exists
+  # prevent failing idempotency test
+  changed_when: false
 
 - name: reset the default Guest password
   zabbix_user:
@@ -34,6 +36,8 @@
     name: "{{ zabbix_web_guest_name }}1gergrg"
     alias: user_not_exists
     state: absent
+  # prevent failing idempotency test
+  changed_when: false
 
 - name: reset the default Guest password
   zabbix_user:

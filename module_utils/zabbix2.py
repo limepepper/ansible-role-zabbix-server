@@ -72,7 +72,7 @@ class ZabbixApi2:
     #
 
     def user_delete(self, alias):
-        userids = self._zapi.apiinfo.version({'filter': {'alias': alias}})
+        userids = self._zapi.user.get({'filter': {'alias': alias}})
         if len(userids) == 1:
             self._zapi.user.delete([int(userids[0]['userid'])])
 

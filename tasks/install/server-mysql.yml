@@ -8,20 +8,21 @@
     set_fact:
       zabbix_db_pass: "{{ lookup('complex_password', '{{ zabbix_store }}/zabbix_db_pass length=15 chars=ascii_lowercase,ascii_uppercase,digits,#=+_-*^$') }}"
     when: zabbix_db_pass is not defined
-
-  - include_role:
-      name: limepepper.mysql
-    vars:
-      mysql_profile: mysql_community_server_5_7
     tags: always
 
   - name: install Zabbix-server packages
     package:
-      name:
-      - zabbix-server-mysql
-      - zabbix-get
-      - zabbix-sender
+      name: "{{ zabbix_packages_server_mysql }}"
     tags: [ pkgs ]
+
+  - tags: [ zabbix, mysql, zabbix-mysql ]
+    when:
+      - "ansible_distribution +'-'+ ansible_distribution_major_version == 'Ubuntu-16'"
+    block:
+      - name: Install a .deb package from the internet.
+        apt:
+          deb: "{{ item }}"
+        with_items: "{{ zabbix_packages_server_mysql_debs }}"
 
   - name: Create a zabbix database with name '{{ zabbix_db_name }}'
     mysql_db:
@@ -53,13 +54,42 @@
       - "found_sql_gz.matched == 1"
 
   - name: assert that we found one and only one sql tar.gz file
-    fail:
+    debug:
       msg: |
         found {{ found_sql_gz.matched }} tar dumps
             {{ found_sql_gz }}
     when:
       - "found_sql_gz.matched != 1"
       - zabbix_db_created.changed
+
+  # - tags: [ zabbix, mysql, zabbix-mysql ]
+  #   when:
+  #     - "ansible_distribution +'-'+ ansible_distribution_major_version == 'Ubuntu-16'"
+  #   block:
+
+  #     - name: create zabbix db from sqldump
+  #       mysql_db:
+  #         name: "{{ zabbix_db_name }}"
+  #         state: import
+  #         target: "/usr/share/zabbix-server-mysql/schema.sql.gz"
+  #       when:
+  #         - zabbix_db_created.changed
+
+  #     - name: create zabbix db from sqldump
+  #       mysql_db:
+  #         name: "{{ zabbix_db_name }}"
+  #         state: import
+  #         target: "/usr/share/zabbix-server-mysql/images.sql.gz"
+  #       when:
+  #         - zabbix_db_created.changed
+
+  #     - name: create zabbix db from sqldump
+  #       mysql_db:
+  #         name: "{{ zabbix_db_name }}"
+  #         state: import
+  #         target: "/usr/share/zabbix-server-mysql/data.sql.gz"
+  #       when:
+  #         - zabbix_db_created.changed
 
   - mysql_user:
       name: "{{ zabbix_db_user }}"

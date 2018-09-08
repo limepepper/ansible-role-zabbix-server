@@ -1,0 +1,21 @@
+---
+
+zabbix_packages_server_mysql: []
+
+zabbix_packages_server_mysql_debs:
+  - http://repo.zabbix.com/zabbix/3.4/ubuntu/pool/main/z/zabbix/zabbix-server-mysql_3.4.9-1+xenial_amd64.deb
+  - http://repo.zabbix.com/zabbix/3.4/ubuntu/pool/main/z/zabbix/zabbix-get_3.4.9-1+xenial_amd64.deb
+  - http://repo.zabbix.com/zabbix/3.4/ubuntu/pool/main/z/zabbix/zabbix-sender_3.4.9-1+xenial_amd64.deb
+  # zabbix-server-mysql
+
+zabbix_packages_web: []
+
+zabbix_packages_server_web_debs:
+  - http://repo.zabbix.com/zabbix/3.4/ubuntu/pool/main/z/zabbix/zabbix-frontend-php_3.4.9-1+xenial_all.deb
+  # zabbix-frontend-php
+
+zabbix_packages_server_pgsql:
+  - http://repo.zabbix.com/zabbix/3.4/ubuntu/pool/main/z/zabbix/zabbix-server-pgsql_3.4.9-1%2Bxenial_amd64.deb
+  # zabbix-server-pgsql
+
+# zabbix_web_conf: /usr/share/zabbix/conf/zabbix.conf.php
