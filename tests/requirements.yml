@@ -1,0 +1,9 @@
+---
+
+- src: https://github.com/limepepper/ansible-role-mysql
+  version: devel
+  name: limepepper.mysql
+
+- src: https://github.com/limepepper/ansible-role-apache
+  version: devel
+  name: limepepper.apache
