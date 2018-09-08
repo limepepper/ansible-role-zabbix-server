@@ -117,6 +117,5 @@
           username: my_smtp_login1
           password: my_smtp_password2
 
-
-        # update zabbix.config set authentication_type=0 where authentication_type=1;
-        # update users set passwd=md5('') where alias='Admin';
+    # update zabbix.config set authentication_type=0 where authentication_type=1;
+    # update users set passwd=md5('') where alias='Admin';

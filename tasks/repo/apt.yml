@@ -19,6 +19,7 @@
             {{ ansible_lsb.id }}
             {{ ansible_machine }}
 
+
   - tags: [ zabbix-debian ]
     become: yes
     when:
@@ -33,15 +34,36 @@
             {{ ansible_lsb.id }}
             {{ ansible_machine }}
 
-      # - name: example copying file with owner and permissions
-      #   copy:
-      #     src: templates/repo/zabbix-official-repo.gpg
-      #     dest: /etc/foo.conf
+  - tags: [ zabbix-debian, repo ]
+    become: yes
+    when:
+      - "ansible_distribution == 'Ubuntu'"
+      - "ansible_distribution_major_version == '18'"
+    block:
 
       - name: Install a .deb package from the internet.
         apt:
-          deb: https://repo.zabbix.com/zabbix/3.4/ubuntu/pool/main/z/zabbix-release/zabbix-release_3.4-1+xenial_all.deb
+          deb: https://repo.zabbix.com/zabbix/3.4/ubuntu/pool/main/z/zabbix-release/zabbix-release_3.4-1+bionic_all.deb
 
-# wget http://repo.zabbix.com/zabbix/3.4/debian/pool/main/z/zabbix-release/zabbix-release_3.4-1+stretch_all.deb
-# # dpkg -i zabbix-release_3.4-1+stretch_all.deb
-# # apt update
+  - tags: [ zabbix-debian, repo ]
+    become: yes
+    when:
+      - "ansible_distribution == 'Ubuntu'"
+      - "ansible_distribution_major_version == '16'"
+    block:
+
+      - name: Install the zabbix repo package
+        apt:
+          deb: https://repo.zabbix.com/zabbix/3.4/ubuntu/pool/main/z/zabbix-release/zabbix-release_3.4-1+xenial_all.deb
+        register: zab_package
+
+      - name: install shim packages for Debian 9
+        apt:
+          update_cache: yes
+        when: zab_package.changed
+
+
+  - name: update
+    apt:
+      update_cache: yes
+      cache_valid_time: 3600

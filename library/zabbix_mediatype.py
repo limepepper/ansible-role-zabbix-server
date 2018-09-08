@@ -104,7 +104,7 @@ def main():
 
     zbx_media = zbx.get_mediatype_by_description(module.params['name'])
 
-    module.warn("user is %s" % zbx_media)
+    module.warn("zbx_media is %s" % zbx_media)
 
     if zbx_media:
         if module.params['state'] == 'absent':
@@ -115,10 +115,10 @@ def main():
             pass
         else:
 
-            changed, user, warnings = zbx.mediatype_update(
+            changed, mediatype, warnings = zbx.mediatype_update(
                 zbx_media, media_args)
             result['changed'] = changed
-            result['user'] = user
+            result['user'] = mediatype
             result['warnings'] = warnings
             # zabbix_host_obj = host.get_host_by_host_name(host_name)
             # host_id = zabbix_host_obj['hostid']

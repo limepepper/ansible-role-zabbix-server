@@ -15,14 +15,14 @@
       name: "{{ zabbix_packages_server_mysql }}"
     tags: [ pkgs ]
 
-  - tags: [ zabbix, mysql, zabbix-mysql ]
-    when:
-      - "ansible_distribution +'-'+ ansible_distribution_major_version == 'Ubuntu-16'"
-    block:
-      - name: Install a .deb package from the internet.
-        apt:
-          deb: "{{ item }}"
-        with_items: "{{ zabbix_packages_server_mysql_debs }}"
+  # - tags: [ zabbix, mysql, zabbix-mysql ]
+  #   when:
+  #     - "ansible_distribution +'-'+ ansible_distribution_major_version == 'Ubuntu-16'"
+  #   block:
+  #     - name: Install a .deb package from the internet.
+  #       apt:
+  #         deb: "{{ item }}"
+  #       with_items: "{{ zabbix_packages_server_mysql_debs }}"
 
   - name: Create a zabbix database with name '{{ zabbix_db_name }}'
     mysql_db:

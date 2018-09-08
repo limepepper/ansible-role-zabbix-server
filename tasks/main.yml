@@ -24,7 +24,7 @@
       when:
         - ansible_pkg_mgr is defined
         - zabbix_server_components
-      # tags: always
+      tags: repo
 
     - include_tasks: "bootstrap/selinux/main.yml"
       vars:

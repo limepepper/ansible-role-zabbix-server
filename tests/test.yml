@@ -13,6 +13,7 @@
           raw: bash -c "test -e /usr/bin/python || ( ( test -e /usr/bin/apt && apt -qqy update && apt install -qqy python-minimal) || ( test -e /usr/bin/dnf && /usr/bin/dnf -qy install python) || ( test -e /usr/bin/yum && /usr/bin/yum -qy install python) )"
           register: output
           changed_when: 'output.stdout|trim() != ""'
+          tags: repo
         - name: Gathering Facts
           setup:
           tags: always
@@ -21,12 +22,6 @@
   tasks:
 
     - block:
-
-        - debug:
-            msg: |
-              apache profile : {{ apache_profile }}
-              ara_enabled : {{ ara_enabled }}
-
         - import_role:
             name: limepepper.mysql
 

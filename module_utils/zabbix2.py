@@ -196,19 +196,26 @@ class ZabbixApi2:
 
     def mediatype_update(self, mediatype, media_args):
         updated = False
+        self.warn("mediatype: %s" % mediatype)
+        self.warn("media_args: %s" % media_args)
         for k, v in media_args.items():
+            self.warn("processing %s" % (k))
             if k in ['smtp_server', 'smtp_email', 'smtp_helo']:
                 # print(mediatype)
                 # print(media_args)
                 # print(k)
                 if media_args[k] != mediatype[k]:
-                    updated = updated or self.mediatype_update_attribute(mediatype['mediatypeid'],
-                                                                         k, v)
+                    self.warn("%s old val was %s, new val is %s, v is %s" %
+                              (k, mediatype[k], media_args[k], v))
+                    updated = self.mediatype_update_attribute(mediatype['mediatypeid'],
+                                                              k, v) or updated
             elif k in ['smtp_port', 'smtp_security', 'smtp_verify_peer',
                        'smtp_verify_host']:
                 if int(media_args[k]) != int(mediatype[k]):
-                    updated = updated or self.mediatype_update_attribute(mediatype['mediatypeid'],
-                                                                         k, v)
+                    self.warn("%s old val was %s, new val is %s, v is %s" %
+                              (k, mediatype[k], media_args[k], v))
+                    updated = self.mediatype_update_attribute(mediatype['mediatypeid'],
+                                                              k, v) or updated
             elif k in ['smtp_authentication']:
                 if int(media_args[k]) != int(mediatype[k]) or media_args['username'] != mediatype['username']:
                     updated = True
@@ -217,12 +224,23 @@ class ZabbixApi2:
                     v,
                     media_args['username'],
                     media_args['passwd'])
+
         mediatype = self.get_mediatype_by_description(
             mediatype['description'])
-        return updated, None, self.warnings
+        return updated, mediatype, self.warnings
+
+    def mediatype_update_attribute(self, id, key, val):
+        self.warn("updating key: %s with value: %s for id %s" % (key, val, id))
+        # try:
+        ret1 = self._zapi.mediatype.update(
+            {'mediatypeid': id, key: val})
+        self.warn(repr(ret1))
+        # except Exception as e:
+        #     self.warn("updating failed with exception: %s" % e)
+        return True
 
     def mediatype_update_authentication(self, id, auth, username, password):
-        self.warn("updating key: %s  %s %s" %
+        self.warn("updating auth key: %s  %s %s" %
                   (auth, username, password))
         try:
             self._zapi.mediatype.update(
@@ -231,15 +249,6 @@ class ZabbixApi2:
         except Exception as e:
             self.warn("updating failed with exception: %s" % e)
         return False
-
-    def mediatype_update_attribute(self, id, key, val):
-        self.warn("updating key: %s with value: %s" % (key, val))
-        try:
-            self._zapi.mediatype.update(
-                {'mediatypeid': id, key: val})
-        except Exception as e:
-            self.warn("updating failed with exception: %s" % e)
-        return True
 
     def user_update_media(self, userid, email):
         user = self._zapi.user.get(

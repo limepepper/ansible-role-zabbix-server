@@ -1,6 +1,9 @@
 ---
 
-zabbix_packages_server_mysql: []
+zabbix_packages_server_mysql:
+  - zabbix-server-mysql
+  - zabbix-get
+  - zabbix-sender
 
 zabbix_packages_server_mysql_debs:
   - http://repo.zabbix.com/zabbix/3.4/ubuntu/pool/main/z/zabbix/zabbix-server-mysql_3.4.9-1+xenial_amd64.deb
@@ -8,7 +11,8 @@ zabbix_packages_server_mysql_debs:
   - http://repo.zabbix.com/zabbix/3.4/ubuntu/pool/main/z/zabbix/zabbix-sender_3.4.9-1+xenial_amd64.deb
   # zabbix-server-mysql
 
-zabbix_packages_web: []
+zabbix_packages_web:
+  - zabbix-frontend-php
 
 zabbix_packages_server_web_debs:
   - http://repo.zabbix.com/zabbix/3.4/ubuntu/pool/main/z/zabbix/zabbix-frontend-php_3.4.9-1+xenial_all.deb
