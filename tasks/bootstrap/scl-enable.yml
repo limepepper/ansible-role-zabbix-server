@@ -1,0 +1,85 @@
+---
+
+- tags: [ scl-enable, bootstrap, always ]
+  become: yes
+  block:
+
+  - name: install scl Package repos
+    package:
+      name:
+        - centos-release-scl
+    tags: [ pkgs ]
+
+  - name: install scl Packages
+    package:
+      name: "{{ scl_pkgs }}"
+    tags: [ pkgs ]
+
+  # if the package came from scl, it needs to be enabled by sourcing
+  - name: enable scl package - https://access.redhat.com/solutions/527703
+    copy:
+      content: |
+          #!/bin/bash
+          source scl_source enable {{ scl_pkg }}
+      dest: "/etc/profile.d/{{ scl_pkg }}.sh"
+      owner: root
+      group: root
+      mode: 0644
+    loop_control:
+      loop_var: scl_pkg
+    with_items: "{{ scl_pkgs }}"
+
+  # - with_items: "{{ scl_pkgs }}"
+  - name: "fixup scl binaries for {{ item[1].pkg }}"
+    copy:
+      content: |
+          #!/bin/bash
+          source scl_source enable {{ item[1].pkg }}
+          exec {{ item[1].src }} "$@"
+      dest: '{{ item[1].dest }}'
+      owner: root
+      group: root
+      mode: 0755
+    with_nested:
+      - "{{ scl_pkgs }}"
+      - - src: '/opt/rh/rh-ruby24/root/usr/bin/ruby'
+          dest: '/usr/bin/ruby'
+          pkg: rh-ruby24
+        - src: '/opt/rh/rh-ruby24/root/usr/bin/gem'
+          dest: '/usr/bin/gem'
+          pkg: rh-ruby24
+        - src: '/opt/rh/rh-ruby24/root/usr/bin/bundler'
+          dest: '/usr/bin/bundler'
+          pkg: rh-ruby24
+        - src: '/opt/rh/rh-ruby24/root/usr/bin/bundle'
+          dest: '/usr/bin/bundle'
+          pkg: rh-ruby24
+    when: "item[0] == 'rh-ruby24'"
+
+
+  # - with_items: "{{ scl_pkgs }}"
+  - name: "fixup scl binaries for {{ item[1].pkg }}"
+    copy:
+      content: |
+          #!/bin/bash
+          source scl_source enable {{ item[1].pkg }}
+          exec {{ item[1].src }} "$@"
+      dest: '{{ item[1].dest }}'
+      owner: root
+      group: root
+      mode: 0755
+    with_nested:
+      - "{{ scl_pkgs }}"
+      - - src: '/opt/rh/rh-ruby23/root/usr/bin/ruby'
+          dest: '/usr/bin/ruby'
+          pkg: rh-ruby23
+        - src: '/opt/rh/rh-ruby23/root/usr/bin/gem'
+          dest: '/usr/bin/gem'
+          pkg: rh-ruby23
+        - src: '/opt/rh/rh-ruby23/root/usr/bin/bundler'
+          dest: '/usr/bin/bundler'
+          pkg: rh-ruby23
+        - src: '/opt/rh/rh-ruby23/root/usr/bin/bundle'
+          dest: '/usr/bin/bundle'
+          pkg: rh-ruby23
+    when: "item[0] == 'rh-ruby23'"

@@ -1,0 +1,38 @@
+---
+
+- tags: [ zabbix ]
+  become: yes
+  block:
+
+  - tags: [ zabbix-raspberrypi ]
+    become: yes
+    when:
+      - ansible_lsb is defined
+      - "ansible_lsb.id == 'Raspbian'"
+      - "ansible_machine == 'armv7l'"
+    block:
+
+      - debug:
+          msg: |
+            is probably raspberrypi
+            {{ ansible_lsb }}
+            {{ ansible_lsb.id }}
+            {{ ansible_machine }}
+
+  - tags: [ zabbix-debian ]
+    become: yes
+    when:
+      - "ansible_os_family == 'Debian'"
+      - "ansible_machine == 'x86_64'"
+    block:
+
+      - debug:
+          msg: |
+            is probably ubuntu or debian
+            {{ ansible_lsb }}
+            {{ ansible_lsb.id }}
+            {{ ansible_machine }}
+
+# wget http://repo.zabbix.com/zabbix/3.4/debian/pool/main/z/zabbix-release/zabbix-release_3.4-1+stretch_all.deb
+# # dpkg -i zabbix-release_3.4-1+stretch_all.deb
+# # apt update

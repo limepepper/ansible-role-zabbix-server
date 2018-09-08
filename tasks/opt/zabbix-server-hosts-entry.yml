@@ -1,0 +1,31 @@
+---
+
+- tags: [ zabbix, zabbix-server-hosts-entry ]
+  become: yes
+  block:
+
+  - debug:
+      msg: |
+        {{ lookup('dig', 'test.ipv6.limepepper.co.uk' )  }}
+
+  - debug:
+      var: zabbix_servers
+
+  - name: add zabbix to hosts file
+    lineinfile:
+      dest: /etc/hosts
+      regexp: '{{ item }}$'
+      line: "{{ zabbix_hosts_use_ipv6 | ternary( lookup('dig', item, 'qtype=AAAA'), lookup('dig', item, 'qtype=A') ) }} {{ item }}"
+      state: present
+    with_items: "{{ zabbix_servers }}"
+
+    # - name: add items to hosts file
+    #   lineinfile:
+    #     dest: /etc/hosts
+    #     regexp: '{{ item }}$'
+    #     line: "{{ lookup('dig', item, 'qtype=AAAA') }} {{ item }}"
+    #     state: present
+    #   with_items:
+    #     # - collectd
+    #     - rsyslog
+    #     - elk

@@ -1,0 +1,97 @@
+---
+
+- tags: [ always ]
+  become: yes
+  block:
+
+    - name: if the failed task was service-like, store its name
+      set_fact:
+        debug_failed_service: "{{ hostvars[inventory_hostname]['ansible_failed_task']['args']['name'] }}"
+      when:
+        - '"ansible_failed_task" in hostvars[inventory_hostname]'
+        - hostvars[inventory_hostname]['ansible_failed_task']['action'] in ['service','systemd','upstart']
+
+    - name: 'attempt to determine issue with service under systemd'
+      shell: "systemctl status {{ debug_failed_service }} -l ; true"
+      when:
+        - 'ansible_service_mgr == "systemd"'
+        - debug_failed_service is defined
+      tags: [ 'skip_ansible_lint' ]
+
+    - name: attempt to determine issue with service under upstart
+      shell: "service {{ debug_failed_service }} status ; true"
+      when:
+        - 'ansible_service_mgr == "upstart"'
+        - debug_failed_service is defined
+      tags: [ 'skip_ansible_lint' ]
+
+    - name: check for debug path
+      stat:
+        path: /var/cache/ansible/debug
+      register: p
+
+    - tags: [ debug ]
+      when: (p.stat.isdir is not defined) or lookup('env', '_DTOOLS')
+      block:
+
+        - debug:
+            msg: "As the run has failed, I am going to install debugging utils"
+
+        - include_tasks: "pkg-tools/main.yml"
+
+        - name: "gather distro vars ({{ ansible_distribution }})"
+          include_tasks: "{{ distro_specific_tools }}"
+          with_first_found:
+            - files:
+                - "debugging/{{ ansible_distribution }}-{{ ansible_distribution_version }}.yml"
+                - "debugging/{{ ansible_distribution }}-{{ ansible_distribution_major_version }}.yml"
+                - "debugging/{{ ansible_distribution }}.yml"
+                - "debugging/{{ ansible_os_family }}.yml"
+                - "debugging/{{ ansible_system }}.yml"
+                - "debugging/default.yml"
+              skip: true
+          loop_control:
+            loop_var: distro_specific_tools
+          tags: [ always ]
+
+        - name: write out the stripconfig bash snippet
+          copy:
+            content: |
+              #!/bin/bash
+
+              while read -r line
+              do
+                echo "$line" | egrep -v '^[[:space:]]*$|^\w*#'
+              done < "${1:-/dev/stdin}"
+
+            dest: /usr/local/bin/stripconfig
+            owner: root
+            group: root
+            mode: 0775
+
+        - name: write out a directory which alsa serves as a done flag
+          file:
+            name: /var/cache/ansible/debug
+            state: directory
+
+
+    - name: "Show debugging info for failed node {{ inventory_hostname }}"
+      debug:
+        msg: |
+              Hostname: {{ ansible_hostname }}
+              ansible version: {{ ansible_version.major }}.{{ ansible_version.minor }}.{{ ansible_version.revision }}
+              Fqdn: {{ ansible_fqdn }}
+              Inventory Hostname {{ inventory_hostname }}
+
+              Distribution is {{ ansible_distribution }}-{{ ansible_distribution_major_version }}
+              Specific version is {{ ansible_distribution_version }}
+              OS family is {{ ansible_os_family }}
+              Release: {{ ansible_distribution_release }}
+              Ansible python version: {{ ansible_python_version }}
+
+              Network
+              #######
+
+              default ipv4: {% if ansible_default_ipv4 is defined and 'address' in ansible_default_ipv4 %}{{ ansible_default_ipv4.address }}{% else %}<undefined>{% endif %}
+
+              default ipv6: {% if ansible_default_ipv6 is defined and 'address' in ansible_default_ipv6 %}{{ ansible_default_ipv6.address }}{% else %}<undefined>{% endif %}
