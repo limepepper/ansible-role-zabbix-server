@@ -36,7 +36,12 @@
         # - "'selinux' in zabbix_server_opts"
       tags: [selinux, zabbix-selinux]
 
-    - include_tasks: "opt/server-firewall.yml"
+    - debug:
+        msg: |
+            zabbix_server_opts is "{{ zabbix_server_opts }}"
+
+    - name: including the firewall selector
+      include_tasks: "opt/server-firewall.yml"
       when: "'server-firewall' in zabbix_server_opts"
 
     - include_tasks: "install/server-mysql.yml"
