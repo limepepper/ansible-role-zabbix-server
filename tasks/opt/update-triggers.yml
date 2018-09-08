@@ -1,0 +1,76 @@
+---
+
+- tags: [ agent, zabbix-agent, update-triggers ]
+  block:
+
+  - name: get the zabbix password from the stored vars. this can be overridden
+    set_fact:
+      zabbix_web_admin_pass: "{{ lookup('complex_password', '{{ role_path }}/.store/zabbix/zabbix/zabbix_web_admin_pass length=15 chars=ascii_lowercase,ascii_uppercase,digits') }}"
+    tags: web_monitor
+
+  - name: cache the zabbix server login account
+    zabbix_server_auth:
+      login_user: Admin
+      login_password: "{{ zabbix_web_admin_pass }}"
+      server_url: http://localhost/zabbix
+    register: zabbix_server_account
+
+  - debug:
+      var: zabbix_server_auth
+
+  # - name: update triggers
+  #   zabbix:
+  #     submodule: trigger
+  #     trigger_name: 'Lack of free swap space on {HOST.NAME} (alt)'
+  #     template_name: 'Template OS Linux'
+  #     trigger_expression: |
+  #         {Template OS Linux:system.swap.size[,pfree].last(0)}<50 and {Template OS Linux:system.swap.size[,total].last(0)}>2
+  #   register: retrieved_trigger
+
+  # - name: update triggers
+  #   local_action:
+  #     module: zabbix
+  #     submodule: trigger
+  #     server_url: http://zabbix/zabbix
+  #     template_name: 'Template OS Linux'
+  #     trigger_name: 'Lack of free swap space on {HOST.NAME} (alt)'
+  #     trigger_expression: |
+  #         {Template OS Linux:system.swap.size[,pfree].last(0)}<50 and {Template OS Linux:system.swap.size[,total].last(0)}=0
+  #   register: retrieved_trigger
+
+  - name: create a monitor for london biological
+    local_action:
+      module: zabbix_web_monitor
+      login_user: Admin
+      login_password: "{{ zabbix_web_admin_pass }}"
+      server_url: http://zabbix/zabbix
+      scenario_name: biohackspace.org
+      template_name: Web Checks
+      application: Web Checks
+      update_interval: 5m
+      steps:
+        - url: http://biohackspace.org
+      # hosts:
+      #   - zabbix
+    tags: web_monitor
+
+  - name: update web triggers
+    local_action:
+      module: zabbix
+      submodule: trigger
+      login_user: Admin
+      login_password: "{{ zabbix_web_admin_pass }}"
+      server_url: http://zabbix/zabbix
+      template_name: Web Checks
+      trigger_name: 'Web scenario "Scenario" failed: {ITEM.VALUE} (alt)'
+      trigger_expression: |
+          {Web Checks:web.test.error[biohackspace.org].strlen()}>0 and {Web Checks:web.test.fail[biohackspace.org].min(5)}>0
+    register: retrieved_trigger
+    tags: web_monitor
+
+#  - fail:
+
+  - debug:
+      var: retrieved_trigger
+
+#{Template:system.swap.size[,free].last(0)}<100000&{Template:system.swap.size[,total].last(0)]>0

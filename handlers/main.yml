@@ -1,0 +1,66 @@
+---
+
+- name: restart zabbix-agent
+  service:
+    name: zabbix-agent
+    state: restarted
+    enabled: yes
+  become: yes
+
+- name: restart zabbix-server
+  service:
+    name: zabbix-server
+    state: restarted
+    enabled: yes
+  become: yes
+
+- name: restart apache
+  service:
+    name: "{{ apache_service }}"
+    state: restarted
+  become: yes
+
+- name: reload apache
+  service:
+    name: "{{ apache_service }}"
+    state: reloaded
+  become: yes
+
+- name: restart win-zabbix-agent
+  win_service:
+    name: Zabbix Agent
+    state: restarted
+
+- name: null handler
+  debug:
+    msg: the handler was called on logfiles_changed
+  listen: logfiles_changed
+
+- name: eventxx-end-of-playbook
+  debug:
+    msg: |
+        the end
+         _____ _   _ _____      _____ _   _ ____
+        |_   _| | | | ____|    | ____| \ | |  _ \
+          | | | |_| |  _| _____|  _| |  \| | | | |
+          | | |  _  | |__|_____| |___| |\  | |_| |
+          |_| |_| |_|_____|    |_____|_| \_|____/
+
+  listen: event-playbook-end
+
+- name: eventy-end-of-playbook
+  debug:
+    msg: |
+        the end
+         ____   ___  _     _____      _____ _   _ ____
+        |  _ \ / _ \| |   | ____|    | ____| \ | |  _ \
+        | |_) | | | | |   |  _| _____|  _| |  \| | | | |
+        |  _ <| |_| | |___| |__|_____| |___| |\  | |_| |
+        |_| \_\\___/|_____|_____|    |_____|_| \_|____/
+
+  listen: event-role-end
+
+- name: reload firewalld
+  shell:
+    cmd: |
+      firewall-cmd --reload

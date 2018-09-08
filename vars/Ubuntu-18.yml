@@ -1,0 +1,12 @@
+---
+
+zabbix_packages_server_mysql:
+  - zabbix-server-mysql
+
+zabbix_packages_web:
+  - zabbix-frontend-php
+
+zabbix_packages_server_pgsql:
+  - zabbix-server-pgsql
+
+# zabbix_web_conf: /usr/share/zabbix/conf/zabbix.conf.php
