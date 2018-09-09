@@ -28,3 +28,5 @@ zabbix_web_admin_enabled: true
 zabbix_web_guest_name: guest
 
 zabbix_web_conf: /etc/zabbix/web/zabbix.conf.php
+
+zabbix_store: "{{ role_path }}/.store/{{ inventory_hostname }}/zabbix"

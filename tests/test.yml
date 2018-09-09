@@ -22,6 +22,13 @@
   tasks:
 
     - block:
+      
+        - name: Find the sql archive file, where the version might have changed
+          find:
+            paths: /usr/share/doc/
+            patterns: 'create.sql.gz'
+            recurse: yes
+
         - import_role:
             name: limepepper.mysql
 
@@ -40,7 +47,7 @@
             zabbix_server_components:
               # order matters here. selinux and firewall before zabbix
               - selinux
-              - server-firewall
+              - zabbix-firewall
               - zabbix-server-mysql
               # install web components after server
               - zabbix-web

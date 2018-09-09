@@ -14,3 +14,5 @@ zabbix_packages_server_pgsql:
   - zabbix-server-pgsql
 
 zabbix_repo_package: https://repo.zabbix.com/zabbix/3.4/debian/pool/main/z/zabbix-release/zabbix-release_3.4-1+stretch_all.deb
+
+zabbix_apache_conf: /etc/apache2/conf-available/zabbix.conf

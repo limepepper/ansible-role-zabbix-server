@@ -1,5 +1,13 @@
 ---
 
+- debug:
+    msg: |
+
+        login_password: "{{ zabbix_web_admin_pass }}"
+        name: "{{ zabbix_web_guest_name }}"
+
+
+
 - name: reset the default Guest password
   zabbix_user:
     login_user: Admin
@@ -51,3 +59,13 @@
     email: "xfexxx@bccadgers.com"
     state: absent
 
+- name: reset the default Guest password
+  zabbix_user:
+    login_user: Admin
+    login_password: "{{ zabbix_web_admin_pass }}"
+    server_url: http://localhost/zabbix
+    name: "{{ zabbix_web_guest_name }}1ger2grg"
+    alias: "new_ffXXer1"
+    enabled: yes
+    passwd: 123
+    email: "xfexxx@bccadgers.com"

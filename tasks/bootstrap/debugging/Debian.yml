@@ -29,6 +29,8 @@
           - whois
           - inotify-tools
           - jq
+          - binutils
+          - vim
 
     # update the mlocate database in the background
     - name: update the mlocate database

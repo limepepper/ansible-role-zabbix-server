@@ -16,7 +16,9 @@
             msg: |
               is probably raspberrypi
               {{ ansible_lsb }}
+              {% if 'id' in ansible_lsb %}
               {{ ansible_lsb.id }}
+              {% endif %}
               {{ ansible_machine }}
 
 
@@ -31,7 +33,9 @@
             msg: |
               is probably ubuntu or debian
               {{ ansible_lsb }}
+              {% if 'id' in ansible_lsb %}
               {{ ansible_lsb.id }}
+              {% endif %}
               {{ ansible_machine }}
 
     - name: Install the zabbix repo package
