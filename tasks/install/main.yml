@@ -1,0 +1,44 @@
+---
+
+- tags: [ zabbix, zabbix-users ]
+  block:
+
+    - name: create complex db_pass, will be overridden by extravars if provided
+      set_fact:
+        zabbix_db_pass: "{{ lookup('complex_password', '{{ zabbix_store }}/zabbix_db_pass length=15 chars=ascii_lowercase,ascii_uppercase,digits,#=+_-*^$') }}"
+      when: zabbix_db_pass is not defined
+      tags: [ always ]
+
+    - name: create complex web_admin, will be overridden by extravars if provided
+      set_fact:
+        zabbix_web_admin_pass: "{{ lookup('complex_password', '{{ zabbix_store }}/zabbix_web_admin_pass length=15 chars=ascii_lowercase,ascii_uppercase,digits') }}"
+      when: zabbix_web_admin_pass is not defined
+      tags: [ always ]
+
+    - include_tasks: "{{ zabbix_server_component }}.yml"
+      # when: "'zabbix-server-mysql' in zabbix_server_components"
+      with_items: "{{ zabbix_server_components }}"
+      loop_control:
+        loop_var: zabbix_server_component
+      tags: always
+
+    # - name: including the firewall selector
+    #   include_tasks: "opt/server-firewall.yml"
+    #   when: "'server-firewall' in zabbix_server_opts"
+
+    # - include_tasks: "install/server-mysql.yml"
+    #   when: "'zabbix-server-mysql' in zabbix_server_components"
+    #   tags: always
+
+    # - include_tasks: "install/server-apache.yml"
+    #   when: "'zabbix-web' in zabbix_server_components"
+    #   tags: [ zabbix-web ]
+
+    # - name: set the web admin password, and disabled the guest user
+    #   include_tasks: "install/server-users.yml"
+    #   tags: [ zabbix-users ]
+    #   when:
+    #     - zabbix_server_components
+
+    # - include_tasks: "install/server-mysql2.yml"
+    #   when: "'zabbix-server-mysql' in zabbix_server_components"

@@ -1,0 +1,19 @@
+---
+
+zabbix_packages_server_mysql:
+  - zabbix-server-mysql
+  - zabbix-get
+  - zabbix-sender
+
+zabbix_packages_server_pgsql:
+  - zabbix-server-pgsql
+  - zabbix-get
+  - zabbix-sender
+
+zabbix_packages_web:
+  - zabbix-web-mysql
+
+zabbix_web_conf: /etc/zabbix/web/zabbix.conf.php
+zabbix_apache_conf: /etc/httpd/conf.d/zabbix.conf
+
+zabbix_version: 3.4

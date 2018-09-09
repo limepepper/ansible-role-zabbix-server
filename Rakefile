@@ -1,3 +1,4 @@
+
 desc 'Rubocop of new code'
 task :rubocop do
   puts 'Execution of Rubocop linting tests'

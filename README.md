@@ -1,8 +1,8 @@
-Role Name
+zabbix-server
 =========
 
-A role to help with installing zabbix server, and to provide modules for
-managing users, groups and hosts in Zabbix
+This role can be used to install [zabbix server](https://www.zabbix.com/manuals) on Ubuntu, CentOS, Debian and Fedora. It also provides modules which allow managing users, groups and
+hosts in Zabbix
 
 Example Playbook
 ----------------

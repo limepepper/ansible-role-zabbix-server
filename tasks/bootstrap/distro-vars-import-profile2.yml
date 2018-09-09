@@ -3,7 +3,7 @@
 - tags: [ mysql ]
   block:
 
-  - name: "gather distro vars 2"
+  - name: "gather distro vars for {{ role_name }} accumulatively"
     include_vars: "{{ distro_specific_vars }}"
     with_items:
       - "default.yml"
@@ -20,7 +20,7 @@
   - debug:
       var: rprofile
 
-  - name: "gather distro vars"
+  - name: "load a profile specific vars file (rprofile: {{ rprofile }}) for  {{ role_name }}"
     include_vars: "{{ distro_specific_vars }}"
     with_first_found:
       - files:

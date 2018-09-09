@@ -1,0 +1,16 @@
+---
+
+zabbix_packages_server_mysql:
+  - zabbix-server-mysql
+  - zabbix-get
+  - zabbix-sender
+
+zabbix_packages_web:
+  - zabbix-frontend-php
+  - zabbix-get
+  - zabbix-sender
+
+zabbix_packages_server_pgsql:
+  - zabbix-server-pgsql
+
+zabbix_repo_package: https://repo.zabbix.com/zabbix/3.4/debian/pool/main/z/zabbix-release/zabbix-release_3.4-1+stretch_all.deb

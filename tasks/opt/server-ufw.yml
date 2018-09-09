@@ -1,0 +1,34 @@
+---
+
+- tags: [ zabbix, zabbix-agent, zabbix-firewall, agent-firewall ]
+  become: yes
+  when: ansible_os_family == 'RedHat'
+  block:
+
+    - fail:
+        msg: is not ufw type host
+
+- tags: [ zabbix, zabbix-agent, zabbix-firewall, firewall, agent-firewall ]
+  become: yes
+  when: ansible_os_family == 'Debian'
+  block:
+
+
+    - debug:
+        msg: |
+          steup the ufw firewall here @todo
+
+    # - set_fact:
+    #     trusted_ips: |
+    #       {{ lookup('dig', 'ipv4.ipsets.limepepper.co.uk', 'qtype=A','@ns1.digitalocean.com').split(',') }}
+
+    # - name: Allow trusted access to tcp port 2812
+    #   ufw:
+    #     rule: allow
+    #     direction: in
+    #     proto: tcp
+    #     to_port: 2812
+    #     from_ip: "{{ item }}"
+    #   with_items: "{{ monit_admin_ips }}"
+
+  # ufw delete allow from 192.168.0.0/16 to any port 9200 proto tcp

@@ -2,7 +2,20 @@
 module my-{{ semodule_name }} 1.0;
 
 require {
+        type httpd_t;
+        type zabbix_port_t;
         type zabbix_t;
+        type zabbix_var_run_t;
+        class sock_file create;
+        class sock_file unlink;
+        class tcp_socket name_connect;
+        class unix_stream_socket connectto;
 }
 
+#============= httpd_t ==============
+allow httpd_t zabbix_port_t:tcp_socket name_connect;
+
 #============= zabbix_t ==============
+allow zabbix_t self:unix_stream_socket connectto;
+allow zabbix_t zabbix_var_run_t:sock_file create;
+allow zabbix_t zabbix_var_run_t:sock_file unlink;

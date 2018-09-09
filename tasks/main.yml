@@ -1,97 +1,80 @@
 ---
 
+  # boilerplate
+- name: bootstrap enough that ansible can run most modules
+  include_tasks: "bootstrap/main.yml"
+  tags: [ bootstrap ]
+
 - tags: [ zabbix ]
   become: yes
   block:
 
       # boilerplate
-    - name: bootstrap enough that ansible can run most modules
-      include_tasks: "bootstrap/main.yml"
-      tags: [ bootstrap ]
-
-      # boilerplate
-    - include_tasks: bootstrap/distro-vars-import2.yml
+    - name: include the distro specific var task file
+      include_tasks: bootstrap/distro-vars-import2.yml
       tags: always
 
       ## START OF MAIN TASKS SECTION ##
 
-    - name: install the zabbix-api python lib
+    - name: Show information for this installation
+      debug:
+        msg: |
+
+            #   ____     _    _    _
+            #  |_  /__ _| |__| |__(_)_ __
+            #   / // _` | '_ \ '_ \ \ \ /
+            #  /___\__,_|_.__/_.__/_/_\_\
+            #
+            ## Importing LimePepper Zabbix-server role
+
+            {% if zabbix_server_components %}
+            Will install
+                  repo: repo/{{ ansible_pkg_mgr }}.yml
+
+            Server Components:
+            {% for zabbix_server_component in zabbix_server_components %}
+                  {{ loop.index }}) {{ zabbix_server_component }}
+            {% endfor %}
+            {% else %}
+
+            {% endif %}
+
+            Server Name:          "{{ ansible_hostname }}"
+            Server Fqdn:          "{{ ansible_fqdn }}"
+            Inventory Hostname:   "{{ inventory_hostname }}"
+
+            default_ipv4:         {% if ansible_default_ipv4 is defined and 'address' in ansible_default_ipv4 %}{{ ansible_default_ipv4.address }}{% else %}<undefined>{% endif %}
+
+            Zabbix Url:           http://{% if ansible_default_ipv4 is defined and 'address' in ansible_default_ipv4 %}{{ ansible_default_ipv4.address }}{% else %}<undefined>{% endif %}/zabbix
+
+            default ipv6:         {% if ansible_default_ipv6 is defined and 'address' in ansible_default_ipv6 %}{{ ansible_default_ipv6.address }}{% else %}<undefined>{% endif %}
+
+    - name: install the zabbix-api pip package ansisble dependency
       pip:
         name: zabbix-api
 
-    - name: configure Zabbix repo for the appropriate package manager
+    - name: configure Zabbix repo if any server components are requested
       include_tasks: "repo/{{ ansible_pkg_mgr }}.yml"
       when:
         - ansible_pkg_mgr is defined
         - zabbix_server_components
-      tags: repo
+      tags: zabbix-repo
 
-    - include_tasks: "bootstrap/selinux/main.yml"
-      vars:
-        semodule_name: zabbix-server
-      when:
-        - ansible_os_family == 'RedHat'
-        # no point in doing this if no server components are being installed
-        - zabbix_server_components
-        # - "'selinux' in zabbix_server_opts"
-      tags: [selinux, zabbix-selinux]
-
-    - debug:
-        msg: |
-            zabbix_server_opts is "{{ zabbix_server_opts }}"
-
-    - name: including the firewall selector
-      include_tasks: "opt/server-firewall.yml"
-      when: "'server-firewall' in zabbix_server_opts"
-
-    - include_tasks: "install/server-mysql.yml"
-      when: "'zabbix-server-mysql' in zabbix_server_components"
+    - name: install any server components passed in zabbix_server_components
+      include_tasks: install/main.yml
       tags: always
 
-    - include_tasks: "install/server-apache.yml"
-      when: "'zabbix-web' in zabbix_server_components"
-      tags: [ zabbix-web ]
-
-    - name: set the web admin password, and disabled the guest user
-      include_tasks: "install/server-users.yml"
-      tags: [ zabbix-users ]
-
-    - include_tasks: "install/server-mysql2.yml"
-      when: "'zabbix-server-mysql' in zabbix_server_components"
-
-    - name: install zabbix components
-      include_tasks: "opt/{{ zabbix_component_item }}.yml"
-      # don't do the tasks already done
-      with_items: "{{ zabbix_server_opts | difference(['selinux','server-firewall']) }}"
-      loop_control:
-        loop_var: zabbix_component_item
-      tags: [ always ]
-
       ## END OF MAIN TASKS SECTION ##
-
-
     - name: "Show debugging info for node {{ inventory_hostname }}"
       debug:
         msg: |
-              Inventory Hostname {{ inventory_hostname }}
-              Hostname: {{ ansible_hostname }}
-              ansible version: {{ ansible_version.major }}.{{ ansible_version.minor }}.{{ ansible_version.revision }}
-              Fqdn: {{ ansible_fqdn }}
+              #   ____     _    _    _       ___         _
+              #  |_  /__ _| |__| |__(_)_ __ | __|_ _  __| |
+              #   / // _` | '_ \ '_ \ \ \ / | _|| ' \/ _` |
+              #  /___\__,_|_.__/_.__/_/_\_\ |___|_||_\__,_|
+              #
 
-              Distribution is {{ ansible_distribution }}-{{ ansible_distribution_major_version }}
-              Specific version is {{ ansible_distribution_version }}
-              OS family is {{ ansible_os_family }}
-              Release: {{ ansible_distribution_release }}
-              Ansible python version: {{ ansible_python_version }}
+              {% if zabbix_web_admin_pass is defined %}
+              zabbix_web_admin_pass: "{{zabbix_web_admin_pass}}"
 
-              Network
-              #######
-
-              default ipv4: {% if ansible_default_ipv4 is defined and 'address' in ansible_default_ipv4 %}{{ ansible_default_ipv4.address }}{% else %}<undefined>{% endif %}
-
-              default ipv6: {% if ansible_default_ipv6 is defined and 'address' in ansible_default_ipv6 %}{{ ansible_default_ipv6.address }}{% else %}<undefined>{% endif %}
-
-
-              Monit
-              ##########
-              zabbix_web_admin_pass: {{ zabbix_web_admin_pass }}
+              {% endif %}

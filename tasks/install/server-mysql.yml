@@ -4,162 +4,80 @@
   become: yes
   block:
 
-  - name: create complex db_pass, will be overridden by extravars if provided
-    set_fact:
-      zabbix_db_pass: "{{ lookup('complex_password', '{{ zabbix_store }}/zabbix_db_pass length=15 chars=ascii_lowercase,ascii_uppercase,digits,#=+_-*^$') }}"
-    when: zabbix_db_pass is not defined
-    tags: always
+    - name: "Configuring zabbix mysql server for {{ inventory_hostname }}"
+      debug:
+        msg: |
+          #   ____     _    _    _       __  __      ___  ___  _
+          #  |_  /__ _| |__| |__(_)_ __ |  \/  |_  _/ __|/ _ \| |
+          #   / // _` | '_ \ '_ \ \ \ / | |\/| | || \__ \ (_) | |__
+          #  /___\__,_|_.__/_.__/_/_\_\ |_|  |_|\_, |___/\__\_\____|
+          #                                     |__/
 
-  - name: install Zabbix-server packages
-    package:
-      name: "{{ zabbix_packages_server_mysql }}"
-    tags: [ pkgs ]
+    - name: install Zabbix-server packages
+      package:
+        name: "{{ zabbix_packages_server_mysql }}"
+      tags: [ pkgs ]
 
-  # - tags: [ zabbix, mysql, zabbix-mysql ]
-  #   when:
-  #     - "ansible_distribution +'-'+ ansible_distribution_major_version == 'Ubuntu-16'"
-  #   block:
-  #     - name: Install a .deb package from the internet.
-  #       apt:
-  #         deb: "{{ item }}"
-  #       with_items: "{{ zabbix_packages_server_mysql_debs }}"
+    - name: Create a zabbix database with name '{{ zabbix_db_name }}'
+      mysql_db:
+        name: "{{ zabbix_db_name }}"
+        target: "{{ zabbix_db_host }}"
+        collation: utf8_bin
+        encoding: utf8
+        state: present
+      register: zabbix_db_created
 
-  - name: Create a zabbix database with name '{{ zabbix_db_name }}'
-    mysql_db:
-      name: "{{ zabbix_db_name }}"
-      target: "{{ zabbix_db_host }}"
-      collation: utf8_bin
-      encoding: utf8
-      state: present
-    register: zabbix_db_created
+    - name: Find the sql archive file, where the version might have changed
+      find:
+        paths: /usr/share/doc/
+        patterns: 'create.sql.gz'
+        recurse: yes
+      register: found_sql_gz
 
-  - name: Find the sql archive file, where the version might have changed
-    find:
-      paths: /usr/share/doc/
-      patterns: 'create.sql.gz'
-      recurse: yes
-    register: found_sql_gz
-    # when:
-    #   - zabbix_db_created.changed
+    - name: create zabbix db from sqldump
+      mysql_db:
+        name: "{{ zabbix_db_name }}"
+        state: import
+        target: "{{ found_sql_gz.files[0].path }}"
+      when:
+        - zabbix_db_created.changed
+        - "found_sql_gz.matched == 1"
 
-  # [{'path': '/var/tmp/test1', 'mode': '0644', '...': '...', 'checksum': '16fac7be61a6e4591a33ef4b729c5c3302307523'}, {'path': '/var/tmp/test2', '...': '...'}]
+    - name: assert that we found one and only one sql tar.gz file
+      debug:
+        msg: |
+          found {{ found_sql_gz.matched }} tar dumps
+              {{ found_sql_gz }}
+      when:
+        - "found_sql_gz.matched != 1"
+        - zabbix_db_created.changed
 
-  - name: create zabbix db from sqldump
-    mysql_db:
-      name: "{{ zabbix_db_name }}"
-      state: import
-      target: "{{ found_sql_gz.files[0].path }}"
-    when:
-      - zabbix_db_created.changed
-      - "found_sql_gz.matched == 1"
+    - mysql_user:
+        name: "{{ zabbix_db_user }}"
+        password: "{{ zabbix_db_pass }}"
+        encrypted: no
+        host: "{{ zabbix_db_host }}"
+        priv: "{{ zabbix_db_name }}.*:ALL"
+        state: present
 
-  - name: assert that we found one and only one sql tar.gz file
-    debug:
-      msg: |
-        found {{ found_sql_gz.matched }} tar dumps
-            {{ found_sql_gz }}
-    when:
-      - "found_sql_gz.matched != 1"
-      - zabbix_db_created.changed
+    - name: create the zabbix config dir
+      file:
+        path: /etc/zabbix
+        state: directory
 
-  # - tags: [ zabbix, mysql, zabbix-mysql ]
-  #   when:
-  #     - "ansible_distribution +'-'+ ansible_distribution_major_version == 'Ubuntu-16'"
-  #   block:
+    - name: create the zabbix server config file
+      template:
+        src: zabbix_server.conf
+        dest: /etc/zabbix/zabbix_server.conf
+      notify: restart zabbix-server
+      tags: [ config ]
 
-  #     - name: create zabbix db from sqldump
-  #       mysql_db:
-  #         name: "{{ zabbix_db_name }}"
-  #         state: import
-  #         target: "/usr/share/zabbix-server-mysql/schema.sql.gz"
-  #       when:
-  #         - zabbix_db_created.changed
+    - name: zabbix-server (mysql)
+      service:
+        name: "zabbix-server"
+        state: started
+        enabled: yes
+      tags: [ service ]
 
-  #     - name: create zabbix db from sqldump
-  #       mysql_db:
-  #         name: "{{ zabbix_db_name }}"
-  #         state: import
-  #         target: "/usr/share/zabbix-server-mysql/images.sql.gz"
-  #       when:
-  #         - zabbix_db_created.changed
-
-  #     - name: create zabbix db from sqldump
-  #       mysql_db:
-  #         name: "{{ zabbix_db_name }}"
-  #         state: import
-  #         target: "/usr/share/zabbix-server-mysql/data.sql.gz"
-  #       when:
-  #         - zabbix_db_created.changed
-
-  - mysql_user:
-      name: "{{ zabbix_db_user }}"
-      password: "{{ zabbix_db_pass }}"
-      encrypted: no
-      host: "{{ zabbix_db_host }}"
-      priv: "{{ zabbix_db_name }}.*:ALL"
-      state: present
-
-  - name: create the zabbix config dir
-    file:
-      path: /etc/zabbix
-      state: directory
-
-  - name: create the zabbix server config file
-    template:
-      src: zabbix_server.conf
-      dest: /etc/zabbix/zabbix_server.conf
-    notify: restart zabbix-server
-    tags: [ config ]
-
-  - name: zabbix-server (mysql)
-    service:
-      name: "zabbix-server"
-      state: started
-      enabled: yes
-    tags: [ service ]
-
-
-
-    # INSERT INTO actions (name,status,esc_period,def_shortdata,def_longdata,r_shortdata,r_longdata,ack_shortdata,ack_longdata,eventsource,evaltype,actionid) VALUES ('test2','0','1h','Auto registration: {HOST.HOST}','Host name: {HOST.HOST}\r\nHost IP: {HOST.IP}\r\nAgent port: {HOST.PORT}','','','','','2','0','8')
-
-    ### INSERT INTO `zabbix`.`actions`
-### SET
-###   @1=8 /* LONGINT meta=0 nullable=0 is_null=0 */
-###   @2='test2' /* VARSTRING(765) meta=765 nullable=0 is_null=0 */
-###   @3=2 /* INT meta=0 nullable=0 is_null=0 */###   @4=0 /* INT meta=0 nullable=0 is_null=0 */
-###   @5=0 /* INT meta=0 nullable=0 is_null=0 */
-###   @6='1h' /* VARSTRING(765) meta=765 nullable=0 is_null=0 */###   @7='Auto registration: {HOST.HOST}' /* VARSTRING(765) meta=765 nullable=0 is_null=0 */###   @8='Host name: {HOST.HOST}\x0d\x0aHost IP: {HOST.IP}\x0d\x0aAgent port: {HOST.PORT}' /* BLOB/TEXT meta=2 nullable=0 is_null=0 */
-###   @9='' /* VARSTRING(765) meta=765 nullable=0 is_null=0 */
-###   @10='' /* BLOB/TEXT meta=2 nullable=0 is_null=0 */
-###   @11='' /* VARSTRING(765) meta=765 nullable=0 is_null=0 */
-###   @12=1 /* INT meta=0 nullable=0 is_null=0 */
-###   @13='' /* VARSTRING(765) meta=765 nullable=0 is_null=0 */
-###   @14='' /* BLOB/TEXT meta=2 nullable=0 is_null=0 */
-
-#180410 10:12:21 server id 7  end_log_pos 16055543 CRC32 0xb56f4d37     Rows_query
-# UPDATE ids SET nextid=12 WHERE table_name='operations' AND field_name='operationid'
-# at 16055543
-
-### INSERT INTO `zabbix`.`operations`
-### SET
-###   @1=12 /* LONGINT meta=0 nullable=0 is_null=0 */
-###   @2=8 /* LONGINT meta=0 nullable=0 is_null=0 */
-###   @3=2 /* INT meta=0 nullable=0 is_null=0 */
-###   @4='0' /* VARSTRING(765) meta=765 nullable=0 is_null=0 */
-###   @5=1 /* INT meta=0 nullable=0 is_null=0 */
-###   @6=1 /* INT meta=0 nullable=0 is_null=0 */
-###   @7=0 /* INT meta=0 nullable=0 is_null=0 */
-###   @8=0 /* INT meta=0 nullable=0 is_null=0 */
-
-# INSERT INTO operations (operationtype,actionid,recovery,operationid) VALUES ('2','8','0','12')
-
-# UPDATE ids SET nextid=820 WHERE table_name='auditlog' AND field_name='auditid'
-### UPDATE `zabbix`.`ids`
-### WHERE
-###   @1='auditlog' /* VARSTRING(192) meta=192 nullable=0 is_null=0 */
-###   @2='auditid' /* VARSTRING(192) meta=192 nullable=0 is_null=0 */
-###   @3=819 /* LONGINT meta=0 nullable=0 is_null=0 */
-### SET
-###   @1='auditlog' /* VARSTRING(192) meta=192 nullable=0 is_null=0 */
-###   @2='auditid' /* VARSTRING(192) meta=192 nullable=0 is_null=0 */
-###   @3=820 /* LONGINT meta=0 nullable=0 is_null=0 */
+    - name: set the admin password and disabled guest access
+      include_tasks: subcomponents/server-users.yml
