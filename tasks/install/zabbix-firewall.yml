@@ -1,0 +1,31 @@
+---
+
+- tags: [ zabbix, zabbix-firewall, firewall, firewalld ]
+  block:
+
+    - name: "Configuring zabbix firewall for {{ inventory_hostname }}"
+      debug:
+        msg: |
+
+          #   ____     _    _    _       ___ _                     _ _
+          #  |_  /__ _| |__| |__(_)_ __ | __(_)_ _ _____ __ ____ _| | |
+          #   / // _` | '_ \ '_ \ \ \ / | _|| | '_/ -_) V  V / _` | | |
+          #  /___\__,_|_.__/_.__/_/_\_\ |_| |_|_| \___|\_/\_/\__,_|_|_|
+          #
+
+
+    - tags: [ zabbix, zabbix-server, zabbix-firewall, agent-firewall ]
+      become: yes
+      when: ansible_os_family == 'RedHat'
+      block:
+
+      - include_tasks: subcomponents/server-firewalld.yml
+        tags: always
+
+    - tags: [ zabbix, zabbix-server, zabbix-firewall, firewall, agent-firewall ]
+      become: yes
+      when: ansible_os_family == 'Debian'
+      block:
+
+      - include_tasks: subcomponents/server-ufw.yml
+        tags: always
