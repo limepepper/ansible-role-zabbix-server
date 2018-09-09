@@ -8,6 +8,7 @@
       become: yes
       when:
         - ansible_lsb is defined
+        - "'id' in ansible_lsb"
         - "ansible_lsb.id == 'Raspbian'"
         - "ansible_machine == 'armv7l'"
       block:
